@@ -1,6 +1,11 @@
-title: "Stand-in title"
-author: "Dr Prof James 'JayJay' Author"
-paper_id: 12345678
+title: "Firm Heterogeneity and the Impact of Immigration: Evidence from German Establishments"
+author: "Morales"
 round: 1
-repo: "https://www.github.com/standin"
-dropbox_rel_path: "JPE/Author-12345678/1"
+repo: "https://github.com/JPE-Reproducibility/JPE-Morales-20211186"
+paper_id: 20211186
+journal: "JPE"
+paper_slug: "Morales-20211186"
+dropbox_rel_path: "JPE/Morales-20211186/1"
+package_size_gb: 0.25
+package_max_file_size_gb: 2
+package_max_pkg_size_gb: 10
