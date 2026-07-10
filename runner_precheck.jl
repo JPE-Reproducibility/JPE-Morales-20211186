@@ -119,3 +119,5 @@ else
     PackageScanner.precheck_package(dest_path, no_data_scan=["__MACOSX", "renv"])
     @info "✓ Precheck complete"
 end
+
+# retrigger precheck
