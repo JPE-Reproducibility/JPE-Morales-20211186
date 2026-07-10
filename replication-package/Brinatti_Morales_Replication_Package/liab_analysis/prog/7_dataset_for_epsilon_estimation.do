@@ -1,0 +1,1030 @@
+cap log close
+log using "${log}/7_dataset_for_epsilon_estimation.log", replace
+
+* Construct individual-level dataset for epsilon and kappa estimation
+* Agostina Brinatti & Nicolas Morales
+* Source data: LIAB Longitudinal Model (version 1993-2014), IAB
+
+/*	This dofile constructs the individual-level dataset used to estimate
+	kappa (elasticity of substitution across origin countries, dofile 9)
+	and epsilon (within-firm elasticity between immigrants and natives, dofile 10).
+
+	It keeps June 30th snapshot spells (cross-section approach), applies the
+	same immigrant definition as dofile 1, and constructs the wage bill
+	and employment variables at the origin-firm-year level.
+
+	Input:
+	  ${orig}/liab_lm_9314_v1_pers.dta         — LIAB individual spells
+	  ${orig}/liab_lm_9314_v1_bhp_basis_v1.dta — LIAB establishment panel
+	  ${data}/aokreis11.dta                     — from dofile 2
+	  ${data}/sample_epsilon_estimation.dta     — from dofile 9 (first run)
+
+	Output:
+	  ${data}/dataset_epsilon_estimation.dta   — firm-year panel
+	  ${data}/dataset_kappa_estimation.dta     — origin-firm-year panel
+
+	No output tables or figures are produced in this dofile.
+*/
+
+
+
+set seed 1234
+
+use "${orig}/liab_lm_9314_v1_pers.dta", clear
+
+
+gen jahr=year(begepi)
+
+
+cap label lang en
+
+*Important line! keep one spell per worker and remove duplicates
+keep if begepi == begorig
+
+drop if betnr==.n
+
+
+*Keep only full time employment, part-time employment or trainees
+keep if erwstat_gr==1 | erwstat_gr==2 | erwstat_gr==3
+
+*Keep spells that have June 30th of each year
+
+
+gen start_month=month(begorig)
+gen end_month=month(endorig)
+
+gen start_day=day(begorig)
+gen end_day=day(endorig)
+
+gen start_year=year(begorig)
+gen end_year=year(endorig)
+
+keep if (start_month<=6 & end_month>=6) & (start_day<=30 & end_day>=30)
+keep if start_year==end_year
+
+
+bysort persnr jahr: egen max_wage=max(tentgelt_orig)
+keep if max_wage>=tentgelt_orig-0.001 & max_wage<=tentgelt_orig+0.001
+
+duplicates drop persnr jahr, force
+
+
+****Assign consistent immigration country****
+
+
+*************Defining Immigrants**************
+
+
+
+*Group citizenship variable
+gen citizenship=1 if german==1
+replace citizenship=2 if eu_orig1==1
+replace citizenship=3 if eu_orig2==1
+replace citizenship=4 if eu_2000==1
+replace citizenship=5 if turkey==1
+replace citizenship=6 if yugoslavia==1
+replace citizenship=7 if europe_other==1
+replace citizenship=8 if asia==1
+replace citizenship=9 if africa_me==1
+replace citizenship=10 if americas==1
+
+
+*Find when workers join the labor market
+bysort persnr: egen rank=rank(jahr), unique
+gen new_entrant=(rank==1)
+
+
+*Calculate tenure at firm
+
+bysort persnr betnr: egen tenure=rank(jahr), unique
+
+
+*Data on college noisy sometimes, we want to classify workers as college vs non college so we choose the most likely observation.
+gen college=(ausbildung==11 | ausbildung==12)
+replace college=. if ausbildung==.z
+bysort persnr: egen college1=mode(college), maxmode
+
+drop college
+rename college1 college
+
+
+gen age=jahr-gebjahr
+
+drop german
+gen german=(citizenship==1)
+
+
+*How many periods does the worker show up as german
+bysort persnr: egen avg_german=mean(german) if citizenship!=.z
+
+*Find those that through time show up as both german and non-german
+gen citizenship_change=(avg_german>0 & avg_german<1 & citizenship!=.z)
+
+gen always_german=(avg_german==1)
+
+
+*How many periods workers show up as immigrants
+bysort persnr: egen imm_count1=sum(1-german) if citizenship!=.z
+
+*Total periods
+bysort persnr: egen total_count1=sum(1) if citizenship!=.z
+
+*Impute imm_count1 for those observations where for some periods citizenship is missing
+bysort persnr: egen imm_count=mean(imm_count1)
+
+*Impute total_count1 for those observations where for some periods citizenship is missing
+bysort persnr: egen total_count=mean(total_count1)
+
+*Create nationality proxy. First with those that always show up as german.
+gen nation_single=citizenship if always_german==1
+
+*Identify main citizenship group for those that sometime show up as foreign.
+
+gen foreign_nation1=citizenship if citizenship!=1
+bysort persnr: egen foreign_nation=mode(foreign_nation1), minmode
+
+*If you show up more than one period as a non-german citizen, impute that foreign citizenship
+replace nation_single=foreign_nation if ((imm_count>1) | (imm_count==1 & total_count==1)) & imm_count!=.
+
+*Count as German if you show up as a foreign citizenship just one period but work more than one period (might be data error)
+replace nation_single=1 if imm_count==1 & total_count>1
+
+*Some cases remaining where we just count them as german as long as they report german for at least one period.
+replace nation_single=1 if nation_single==. & avg_german!=0
+
+drop german-total_count foreign_nation1 foreign_nation
+
+
+*Age at which you join the labor market
+bysort persnr: egen year_first=min(jahr)
+gen age_first=year_first-gebjahr
+
+
+*More narrow definition: Remove those who seem to be immigrants but join the labor market too early (likely grew up in germany to foreign parents or studied in Germany)
+gen nation_single_alt=nation_single
+gen immigrant_not_enter=(nation_single_alt!=1 & ((age_first<=19 & college==0) | (age_first<=25 & college==1)))
+*Assumption: assign German nationality to those cases
+replace nation_single_alt=1 if immigrant_not_enter==1
+
+
+drop immigrant_not_enter
+
+
+
+*label drop nationality
+label def nation_single 1 "German" 2 "EU Original 1" 3 "EU Original 1" 4 "EU 2000" 5 "Turkey" 6 "Yugoslavia" 7 "Europe non EU" 8 "Asia" 9 "Africa & ME" 10 "Americas"
+label val nation_single nation_single
+
+
+
+***Create auxiliary variables needed later
+
+gen occ=beruf_gr
+
+gen manual=((occ>=1 & occ<=54) | (occ>=56 & occ<=58))
+gen service=((occ>=72 & occ<=79) | (occ>=55 & occ<=56) | (occ>=80 & occ<=86) | (occ>=90 & occ<=98) | (occ>=114 & occ<=120))
+gen professional=((occ>=59 & occ<=71) | (occ>=99 & occ<=113) | (occ>=87 & occ<=89))
+
+
+
+keep persnr jahr betnr nation_single nation_single_alt tentgelt_orig college tenure rank new_entrant age betr_st idnum erwstat_gr frau manual service professional beruf_gr
+
+
+save "${data}/individual_level_epsilon_liab.dta", replace
+
+
+
+keep if erwstat_gr==1
+rename tentgelt_orig tentgelt
+gen german=(nation_single==1)
+
+gen l_wage = log(tentgelt) 
+
+* Upload data on the industry and labor market of the firm
+
+merge m:1 betnr jahr using "${orig}/liab_lm_9314_v1_bhp_basis_v1.dta", keepusing(w93_3_gen az_ges ao_kreis grd_jahr lzt_jahr te_imp_mw)
+drop if _m!=3
+drop _m
+
+
+	*create reduced local labor markets
+	gen ao_kreis11=ao_kreis
+	merge m:1 ao_kreis11 using "${data}/aokreis11.dta"
+	drop if _m==2
+	drop _m
+
+	drop if ao_kreis11==.
+
+	cap drop ao_bula
+	gen ao_bula=floor(ao_kreis/1000)
+
+
+*Create industry category
+
+gen ind_2dig=floor(w93_3_gen/10)
+
+replace ind_2dig=1 if ind_2dig>=1 & ind_2dig<=5
+replace ind_2dig=10 if ind_2dig>=10 & ind_2dig<=14
+replace ind_2dig=15 if ind_2dig>=15 & ind_2dig<=16
+replace ind_2dig=17 if ind_2dig>=17 & ind_2dig<=19
+replace ind_2dig=23 if ind_2dig>=23 & ind_2dig<=24
+replace ind_2dig=29 if ind_2dig>=29 & ind_2dig<=30
+replace ind_2dig=37 if ind_2dig>=37 & ind_2dig<=41
+replace ind_2dig=65 if ind_2dig>=65 & ind_2dig<=67
+
+
+gen tradeable3=((w93_3_gen>=154 & w93_3_gen<=366) | (w93_3_gen>=721 & w93_3_gen<=744) | (w93_3_gen>=501 & w93_3_gen<=517))
+
+
+* We have two 2 digit industries that are both T and NT. To be consistent with the model, we redifine the classification as follows:
+
+egen ind_2dig_aux 	= group(ind_2dig tradeable3) 
+drop ind_2dig 
+rename ind_2dig_aux ind_2dig
+
+
+*Fixed effects 
+
+egen ind_labormkt 	= group(ind_2dig local_labor11)
+egen rt_fe 		 	= group(local_labor11 jahr)
+egen kt_fe 			= group(ind_2dig jahr)
+egen ind_med_time 	= group(ind_2dig jahr)
+
+
+*-------------------------------------------------------------------------------
+*** Construct elements of initial share 
+*-------------------------------------------------------------------------------
+
+	*At the market level
+
+bysort nation_single ind_labormkt jahr: egen nemp_orkt=sum(1)
+bysort nation_single ind_labormkt jahr: egen wemp_orkt=sum(tentgelt)
+
+bysort ind_labormkt jahr: egen nemp_rkt=sum(1)
+bysort ind_labormkt jahr: egen wemp_rkt=sum(tentgelt)
+
+bysort ind_labormkt jahr: egen nemp_nat_rkt=sum((nation_single==1)*1)
+bysort ind_labormkt jahr: egen wemp_nat_rkt=sum((nation_single==1)*tentgelt)
+
+bysort ind_labormkt jahr: egen nemp_imm_rkt=sum((nation_single!=1)*1)
+bysort ind_labormkt jahr: egen wemp_imm_rkt=sum((nation_single!=1)*tentgelt)
+
+
+	*At the firm level
+
+bysort nation_single betnr jahr: egen nemp_oft=sum(1)
+bysort nation_single betnr jahr: egen wemp_oft=sum(tentgelt)
+
+bysort betnr jahr: egen nemp_ft=sum(1)
+bysort betnr jahr: egen wemp_ft=sum(tentgelt)
+
+bysort betnr jahr: egen nemp_nat_ft=sum((nation_single==1)*1)
+bysort betnr jahr: egen wemp_nat_ft=sum((nation_single==1)*tentgelt)
+
+bysort betnr jahr: egen nemp_imm_ft=sum((nation_single!=1)*1)
+bysort betnr jahr: egen wemp_imm_ft=sum((nation_single!=1)*tentgelt)
+
+
+*Assign initial share in 2003
+	
+	* Market level
+
+gen share_03_1=nemp_orkt/nemp_imm_rkt if jahr==2003
+bysort nation_single ind_labormkt: egen share_03_ork=mean(share_03_1)
+
+gen sharew_03_1=wemp_orkt/wemp_imm_rkt if jahr==2003
+bysort nation_single ind_labormkt: egen sharew_03_ork=mean(sharew_03_1)
+
+replace share_03_ork=. if nation_single==1
+replace sharew_03_ork=. if nation_single==1
+
+	*Firm level 
+	
+gen share_03_1_f=nemp_oft/nemp_imm_ft if jahr==2003
+bysort nation_single betnr: egen share_03_of=mean(share_03_1_f)
+
+gen sharew_03_1_f=wemp_oft/wemp_imm_ft if jahr==2003
+bysort nation_single betnr: egen sharew_03_of=mean(sharew_03_1_f)
+
+replace share_03_of=. if nation_single==1
+replace sharew_03_of=. if nation_single==1
+
+	
+
+*-------------------------------------------------------------------------------
+*** Construct elements of shifter
+*-------------------------------------------------------------------------------
+
+*Workers origin going to state to exclude them from shifter
+bysort ao_bula jahr nation_single: egen nemp_ost=sum(1)
+bysort ao_bula jahr nation_single: egen wemp_ost=sum(tentgelt)
+
+*Germans from origin going to state to exclude them from shifter
+bysort ao_bula jahr: egen nemp_gst=sum((nation_single==1)*1)
+bysort ao_bula jahr: egen wemp_gst=sum((nation_single==1)*tentgelt)
+
+*Total workers in germany by origin 
+
+bysort jahr nation_single: egen nemp_ot=sum(1)
+bysort jahr nation_single: egen wemp_ot=sum(tentgelt)
+
+*Total germans in germany by origin 
+
+bysort jahr: egen nemp_gt=sum((nation_single==1)*1)
+bysort jahr: egen wemp_gt=sum((nation_single==1)*tentgelt)
+
+*Total workers in the country
+
+bysort jahr: egen nemp_t=sum(1)
+bysort jahr: egen wemp_t=sum(tentgelt)
+
+*Total workers (wage bill) in the labor market
+
+bysort 				 local_labor11 jahr: egen wemp_rt=sum(tentgelt)
+
+*Workers (wage bill) in the labor market by origin
+
+bysort nation_single local_labor11 jahr: egen wemp_ort=sum(tentgelt)
+
+
+
+*-------------------------------------------------------------------------------
+** Generate shift share instrument 
+*-------------------------------------------------------------------------------
+
+	*At the market level
+
+	gen shift_share_o=share_03_ork*(nemp_ot-nemp_ost)/(nemp_gt-nemp_gst)
+
+replace shift_share_o=. if nation_single==1
+	bysort nation_single jahr ind_labormkt: gen n_shift_share_o=_n
+	gen t_shift_share_o=shift_share_o if n_shift_share_o==1
+	bysort jahr ind_labormkt: egen iv_shift_share_o=total(t_shift_share_o)
+	
+	replace iv_shift_share_o=0 if iv_shift_share_o==.
+	
+	
+	gen liv_shift_share_o=log(1+iv_shift_share_o)
+	drop t_* n_*
+	
+
+	* At the firm level 
+	
+	gen shift_share_o_f=share_03_of*(nemp_ot-nemp_ost)/(nemp_gt-nemp_gst)
+
+	replace shift_share_o_f=. if nation_single==1
+	bysort nation_single jahr betnr: gen n_shift_share_o_f=_n
+	gen t_shift_share_o_f=shift_share_o_f if n_shift_share_o_f==1
+	bysort jahr betnr: egen iv_shift_share_o_f=total(t_shift_share_o_f)
+	
+	replace iv_shift_share_o_f=0 if iv_shift_share_o_f==.
+	drop t_* n_*	
+	
+	
+	gen shift_sharew_o_f=sharew_03_of*(nemp_ot-nemp_ost)/(nemp_gt-nemp_gst)
+
+	replace shift_sharew_o_f=. if nation_single==1
+	bysort nation_single jahr betnr: gen n_shift_sharew_o_f=_n
+	gen t_shift_sharew_o_f=shift_sharew_o_f if n_shift_sharew_o_f==1
+	bysort jahr betnr: egen iv_shift_sharew_o_f=total(t_shift_sharew_o_f)
+	
+	replace iv_shift_sharew_o_f=0 if iv_shift_sharew_o_f==.
+	drop t_* n_*	
+	
+** Generate shift share instrument with the shift in ratios
+
+	*Shift
+	
+gen x_1=nemp_gst if jahr==2003
+bysort ao_bula: egen nemp_gs03=mean(x_1)
+drop x_1
+
+gen x_1=nemp_ost if jahr==2003
+bysort ao_bula nation_single: egen nemp_os03=mean(x_1)
+drop x_1
+
+gen x_1=nemp_ot if jahr==2003
+bysort nation_single: egen nemp_o03=mean(x_1)
+drop x_1
+
+gen x_1=nemp_gt if jahr==2003
+egen nemp_g03=mean(x_1)
+drop x_1
+
+	* Shift share at the market level 
+	
+gen r_shift_share_o=share_03_ork*( (nemp_ot-nemp_ost)/(nemp_gt-nemp_gst) ) * ( (nemp_g03-nemp_gs03)/(nemp_o03-nemp_os03) ) 
+
+replace r_shift_share_o=. if nation_single==1
+	bysort nation_single jahr ind_labormkt: gen n_shift_share_o=_n
+	gen t_r_shift_share_o=r_shift_share_o if n_shift_share_o==1
+	bysort jahr ind_labormkt: egen iv_r_shift_share_o=total(t_r_shift_share_o)
+	
+	replace iv_r_shift_share_o=0 if iv_r_shift_share_o==.
+	drop t_* n_*
+	
+
+	* Shift share at the firm level 
+	
+	
+	gen r_shift_share_o_f=share_03_of*( (nemp_ot-nemp_ost)/(nemp_gt-nemp_gst) ) * ( (nemp_g03-nemp_gs03)/(nemp_o03-nemp_os03) )
+
+	replace r_shift_share_o_f=. if nation_single==1
+	bysort nation_single jahr betnr: gen n_shift_share_o_f=_n
+	gen t_r_shift_share_o_f=r_shift_share_o_f if n_shift_share_o_f==1
+	bysort jahr betnr: egen iv_r_shift_share_o_f=total(t_r_shift_share_o_f)
+	
+	replace iv_r_shift_share_o_f=0 if iv_r_shift_share_o_f==.
+	drop t_* n_*	
+	
+	
+	gen r_shift_sharew_o_f=sharew_03_of*( (nemp_ot-nemp_ost)/(nemp_gt-nemp_gst) ) * ( (nemp_g03-nemp_gs03)/(nemp_o03-nemp_os03) )
+
+	replace r_shift_sharew_o_f=sharew_03_of*( (nemp_ot)/(nemp_gt) ) * ( (nemp_g03)/(nemp_o03) ) /*New line - temp*/
+	
+	replace r_shift_sharew_o_f=. if nation_single==1
+	bysort nation_single jahr betnr: gen n_shift_share_o_f=_n
+	gen t_r_shift_sharew_o_f=r_shift_sharew_o_f if n_shift_share_o_f==1
+	bysort jahr betnr: egen iv_r_shift_sharew_o_f=total(t_r_shift_sharew_o_f)
+	
+	replace iv_r_shift_sharew_o_f=0 if iv_r_shift_sharew_o_f==.
+	drop t_* n_*	
+	
+
+*-------------------------------------------------------------------------------
+** Generate additional outcome variable and regressors
+*-------------------------------------------------------------------------------
+
+gen l_wbill_imm_nat = log(wemp_imm_ft/wemp_nat_ft)
+gen l_emp_imm_nat   = log(nemp_imm_ft/nemp_nat_ft)
+gen wb_mig_ger	    = wemp_imm_ft/wemp_nat_ft
+
+gen emp_03_1=log(nemp_ft) if jahr==2003
+bysort betnr: egen logemp_tot_firm03=mean(emp_03_1)
+drop emp_03_1 
+
+gen lwage_nat = l_wage if german==1
+bysort betnr jahr: egen lwage_nat_ft=mean(lwage_nat)
+
+gen l_emp_tot      = log(nemp_ft)
+gen logemp_tot_tot = log(nemp_ft)
+
+ by betnr (jahr), sort: gen logemp_tot_totlag  = log(nemp_ft[_n-1])
+
+
+*Main endogenous regressors for sales regression 
+
+bysort local_labor11 jahr: egen nemp_nat_rt=sum((nation_single==1)*1)
+bysort local_labor11 jahr: egen wemp_nat_rt=sum((nation_single==1)*tentgelt)
+bysort local_labor11 jahr: egen nemp_rt=sum(1)
+
+gen share_emp_imm_rt = (wemp_rt-wemp_nat_rt)/wemp_rt 
+gen share_mig_local2_t = share_emp_imm_rt
+
+
+gen interaction   = share_emp_imm_rt*logemp_tot_totlag 
+
+
+** Save
+
+save "${data}/dataset_kappa_estimation.dta", replace
+
+
+*-------------------------------------------------------------------------------
+* Create additional firm level variables for LIAB firms - excluding financials 
+*------------------------------------------------------------------------------- 
+
+**Keep only LIAB sample	
+
+keep if betr_st==1 | betr_st==2
+keep if jahr>=2003 & jahr<=2011
+
+
+*firm's workforce composition in terms of education and age 
+
+gen young=(age<=40)
+
+bysort betnr jahr: egen tot_emp_coll=sum(college)
+bysort betnr jahr: egen tot_emp_ncoll=sum(1-college)
+bysort betnr jahr: egen tot_emp_young=sum(young)
+bysort betnr jahr: egen tot_emp_old=sum(1-young)
+
+
+bysort betnr jahr: egen wbill_coll=sum(tentgelt*college)
+bysort betnr jahr: egen wbill_ncoll=sum(tentgelt*(1-college))
+bysort betnr jahr: egen wbill_young=sum(tentgelt*young)
+bysort betnr jahr: egen wbill_old=sum(tentgelt*(1-young))
+
+
+bysort betnr jahr: egen wbill_imm_coll=sum(tentgelt*(1-german)*college)
+bysort betnr jahr: egen wbill_imm_ncoll=sum(tentgelt*(1-german)*(1-college))
+bysort betnr jahr: egen wbill_imm_young=sum(tentgelt*(1-german)*young)
+bysort betnr jahr: egen wbill_imm_old=sum(tentgelt*(1-german)*(1-young))
+
+
+
+
+duplicates drop betnr jahr, force
+
+*-------------------------------------------------------------------------------
+* Create firm level variables for LIAB firms about their financials 
+*------------------------------------------------------------------------------- 
+
+*Merging Financials from Interview data
+
+gen turnover_type=.
+gen turnover=.
+gen grosspay=.
+
+gen relocated=.
+
+
+gen integrated=.
+gen exports_west_germany=.
+gen exports_east_germany=.
+gen exports_foreign=.
+gen int_inputs=.
+
+
+gen investment=.
+
+gen collective_agreement=.
+gen industry_agreement=.
+
+gen ownership_structure=.
+gen single_establishment=.
+
+gen parent_ownership=.
+gen foreign_parent=.
+
+
+*2012 survey - match to 2011 data
+
+quietly merge m:1 idnum using "${orig}/iabbp_2012.dta", keepusing(t80 t79b t48 t49 t52 t21 t11 t09a t09b t09c t08 t07 t02a t02b t02c t02d t03)
+drop if _m==2
+
+replace turnover_type=t07 if jahr==2011
+replace turnover=t08 if jahr==2011
+replace grosspay=t52 if jahr==2011
+
+replace relocated=1 if (t02a==1 | t02b==1 | t02c==1) & jahr==2011
+replace relocated=0 if (t02d==1) & jahr==2011
+
+replace integrated=1 if t03==1 & jahr==2011
+replace integrated=0 if t03==2 & jahr==2011
+
+
+replace exports_west_germany=t09a if t09a!=-9 & jahr==2011
+replace exports_east_germany=t09b if t09b!=-9 & jahr==2011
+replace exports_foreign=t09c if t09c!=-9 & jahr==2011
+
+replace int_inputs=t11 if t11!=-9 & jahr==2011
+
+replace investment=t21 if t21!=-9 & jahr==2011
+replace investment=0 if t21==. & jahr==2011 & _m==3
+
+replace collective_agreement=t48 if t48!=-9 & jahr==2011
+replace industry_agreement=t49 if t49!=-9 & jahr==2011
+
+replace ownership_structure=t80 if t80!=-9 & jahr==2011
+replace single_establishment=1 if t80==1 & jahr==2011
+replace single_establishment=0 if t80!=1 & t80!=-9 & _m==3 & jahr==2011
+
+replace parent_ownership=t79b if t79b!=-9 & jahr==2011
+replace foreign_parent=1 if t79b==3 & jahr==2011
+replace foreign_parent=0 if t79b!=3 &  t79b!=-9 & jahr==2011 & _m==3
+
+
+drop t80 t79b t48 t49 t52 t21 t11 t09a t09b t09c t08 t07 t02a t02b t02c t02d t03
+drop _m
+
+
+
+
+
+
+*2011 survey - match to 2010 data
+quietly merge m:1 idnum using "${orig}/iabbp_2011.dta", keepusing(s80b s84 s53 s52 s17 s11 s09c s09b s09a s03 s02d s02a s02b s02c s58 s08 s07)
+drop if _m==2
+
+replace turnover_type=s07 if jahr==2010
+replace turnover=s08 if jahr==2010
+replace grosspay=s58 if jahr==2010
+
+replace relocated=1 if (s02a==1 | s02b==1 | s02c==1) & jahr==2010
+replace relocated=0 if (s02d==1) & jahr==2010
+
+replace integrated=1 if s03==1 & jahr==2010
+replace integrated=0 if s03==2 & jahr==2010
+
+
+replace exports_west_germany=s09a if s09a!=-9 & jahr==2010
+replace exports_east_germany=s09b if s09b!=-9 & jahr==2010
+replace exports_foreign=s09c if s09c!=-9 & jahr==2010
+
+replace int_inputs=s11 if s11!=-9 & jahr==2010
+
+replace investment=s17 if s17!=-9 & jahr==2010
+replace investment=0 if s17==. & jahr==2010 & _m==3
+
+replace collective_agreement=s52 if s52!=-9 & jahr==2010
+replace industry_agreement=s53 if s53!=-9 & jahr==2010
+
+replace ownership_structure=s84 if s84!=-9 & jahr==2010
+replace single_establishment=1 if s84==1 & jahr==2010
+replace single_establishment=0 if s84!=1 & s84!=-9 & _m==3 & jahr==2010
+
+replace parent_ownership=s80b if s80b!=-9 & jahr==2010
+replace foreign_parent=1 if s80b==3 & jahr==2010
+replace foreign_parent=0 if s80b!=3 &  s80b!=-9 & jahr==2010 & _m==3
+
+
+drop s80b s84 s53 s52 s17 s11 s09c s09b s09a s03 s02d s02a s02b s02c s58 s08 s07
+drop _m
+
+
+
+
+
+
+*2010 survey - match to 2009 data
+quietly merge m:1 idnum using "${orig}/iabbp_2010.dta", keepusing(r87 r83 r51 r50 r20 r13 r11c r11b r11a r03 r09 r10 r54 r02a r02b r02c r02d r02e r02f)
+drop if _m==2
+
+replace turnover_type=r09 if jahr==2009
+replace turnover=r10 if jahr==2009
+replace grosspay=r54 if jahr==2009
+
+replace relocated=1 if (r02a==1 | r02b==1 | r02c==1 | r02d==1 | r02e==1) & jahr==2009
+replace relocated=0 if (r02f==1) & jahr==2009
+
+replace integrated=1 if r03==1 & jahr==2009
+replace integrated=0 if r03==2 & jahr==2009
+
+
+replace exports_west_germany=r11a if r11a!=-9 & jahr==2009
+replace exports_east_germany=r11b if r11b!=-9 & jahr==2009
+replace exports_foreign=r11c if r11c!=-9 & jahr==2009
+
+replace int_inputs=r13 if r13!=-9 & jahr==2009
+
+replace investment=r20 if r20!=-9 & jahr==2009
+replace investment=0 if r20==. & jahr==2009 & _m==3
+
+replace collective_agreement=r50 if r50!=-9 & jahr==2009
+replace industry_agreement=r51 if r51!=-9 & jahr==2009
+
+replace ownership_structure=r83 if r83!=-9 & jahr==2009
+replace single_establishment=1 if r83==1 & jahr==2009
+replace single_establishment=0 if r83!=1 & r83!=-9 & _m==3 & jahr==2009
+
+replace parent_ownership=r87 if r87!=-9 & jahr==2009
+replace foreign_parent=1 if r87==3 & jahr==2009
+replace foreign_parent=0 if r87!=3 &  r87!=-9 & jahr==2009 & _m==3
+
+
+drop r87 r83 r51 r50 r20 r13 r11c r11b r11a r03 r09 r10 r54 r02a r02b r02c r02d r02e r02f
+drop _m
+
+
+
+
+
+
+*2009 survey - match to 2008 data
+quietly merge m:1 idnum using "${orig}/iabbp_2009.dta", keepusing(q06 q07 q43 q02a q02b q02c q02d q03 q08a q08b q08c q10 q17 q39 q40 q88 q91)
+drop if _m==2
+
+replace turnover_type=q06 if jahr==2008
+replace turnover=q07 if jahr==2008
+replace grosspay=q43 if jahr==2008
+
+replace relocated=1 if (q02a==1 | q02b==1 | q02c==1) & jahr==2008
+replace relocated=0 if (q02a==0 & q02b==0 & q02c==0) & jahr==2008
+
+replace integrated=1 if q03==1 & jahr==2008
+replace integrated=0 if q03==2 & jahr==2008
+
+
+replace exports_west_germany=q08a if q08a!=-9 & jahr==2008
+replace exports_east_germany=q08b if q08b!=-9 & jahr==2008
+replace exports_foreign=q08c if q08c!=-9 & jahr==2008
+
+replace int_inputs=q10 if q10!=-9 & jahr==2008
+
+replace investment=q17 if q17!=-9 & jahr==2008
+replace investment=0 if q17==. & jahr==2008 & _m==3
+
+replace collective_agreement=q39 if q39!=-9 & jahr==2008
+replace industry_agreement=q40 if q40!=-9 & jahr==2008
+
+replace ownership_structure=q88 if q88!=-9 & jahr==2008
+replace single_establishment=1 if q88==1 & jahr==2008
+replace single_establishment=0 if q88!=1 & q88!=-9 & _m==3 & jahr==2008
+
+replace parent_ownership=q91 if q91!=-9 & jahr==2008
+replace foreign_parent=1 if q91==3 & jahr==2008
+replace foreign_parent=0 if q91!=3 &  q91!=-9 & jahr==2008 & _m==3
+
+
+drop q06 q07 q43 q02a q02b q02c q02d q03 q08a q08b q08c q10 q17 q39 q40 q88 q91
+drop _m
+
+*2008 survey - match to 2007 data
+quietly merge m:1 idnum using "${orig}/iabbp_2008.dta", keepusing(p09 p10 p63 p02a p02b p02c p03 p11a p11b p11c p13 p19 p59 p60 p91 p94)
+drop if _m==2
+
+replace turnover_type=p09 if jahr==2007
+replace turnover=p10 if jahr==2007
+replace grosspay=p63 if jahr==2007
+
+
+replace relocated=1 if (p02a==1 | p02b==1 | p02c==1) & jahr==2007
+replace relocated=0 if (p02a==0 & p02b==0 & p02c==0) & jahr==2007
+
+replace integrated=1 if p03==1 & jahr==2007
+replace integrated=0 if p03==2 & jahr==2007
+
+
+replace exports_west_germany=p11a if p11a!=-9 & jahr==2007
+replace exports_east_germany=p11b if p11b!=-9 & jahr==2007
+replace exports_foreign=p11c if p11c!=-9 & jahr==2007
+
+replace int_inputs=p13 if p13!=-9 & jahr==2007
+
+replace investment=p19 if p19!=-9 & jahr==2007
+replace investment=0 if p19==. & jahr==2007 & _m==3
+
+replace collective_agreement=p59 if p59!=-9 & jahr==2007
+replace industry_agreement=p60 if p60!=-9 & jahr==2007
+
+replace ownership_structure=p91 if p91!=-9 & jahr==2007
+replace single_establishment=1 if p91==1 & jahr==2007
+replace single_establishment=0 if p91!=1 & jahr==2007 & p91!=-9 & _m==3
+
+replace parent_ownership=p94 if p94!=-9 & jahr==2007
+replace foreign_parent=1 if p94==3 & jahr==2007
+replace foreign_parent=0 if p94!=3 & jahr==2007 & p94!=-9 & _m==3
+
+
+drop p09 p10 p63 p02a p02b p02c p03 p11a p11b p11c p13 p19 p59 p60 p91 p94
+drop _m
+
+*2007 survey - match to 2006 data
+quietly merge m:1 idnum using "${orig}/iabbp_2007.dta", keepusing(o08 o09 o85 o02a o02b o02c o02d o02e o04 o10a o10b o10c o10d o10e o12 o18 o81 o82 o90 o92)
+drop if _m==2
+
+replace turnover_type=o08 if jahr==2006
+replace turnover=o09 if jahr==2006
+replace grosspay=o85 if jahr==2006
+
+replace relocated=1 if (o02a==1 | o02b==1 | o02c==1 | o02d==1 | o02e==1) & jahr==2006
+replace relocated=0 if (o02a==0 & o02b==0 & o02c==0 & o02d==0 & o02e==0) & jahr==2006
+
+replace integrated=1 if o04==1 & jahr==2006
+replace integrated=0 if o04==2 & jahr==2006
+
+
+replace exports_west_germany=o10a if o10a!=-9 & jahr==2006
+replace exports_east_germany=o10b if o10b!=-9 & jahr==2006
+replace exports_foreign=o10c+o10d+o10e if o10c!=-9 & o10d!=-9 & o10e!=-9 & jahr==2006
+
+replace int_inputs=o12 if o12!=-9 & jahr==2006
+
+replace investment=o18 if o18!=-9 & jahr==2006
+replace investment=0 if o18==. & jahr==2006 & _m==3
+
+replace collective_agreement=o81 if o81!=-9 & jahr==2006
+replace industry_agreement=o82 if o82!=-9 & jahr==2006
+
+replace ownership_structure=o90 if o90!=-9 & jahr==2006
+replace single_establishment=1 if o90==1 & jahr==2006
+replace single_establishment=0 if o90!=1 & jahr==2006 & o90!=-9 & _m==3
+
+replace parent_ownership=o92 if o92!=-9 & jahr==2006
+replace foreign_parent=1 if o92==3 & jahr==2006
+replace foreign_parent=0 if o92!=3 & jahr==2006 & o92!=-9 & _m==3
+
+drop o08 o09 o85 o02a o02b o02c o02d o02e o04 o10a o10b o10c o10d o10e o12 o18 o81 o82 o90 o92
+drop _m
+
+*2006 survey - match to 2005 data
+quietly merge m:1 idnum using "${orig}/iabbp_2006.dta", keepusing(n07 n08 n83 n02aa n02ab n02ac n03 n09a n09b n09c n09d n09e n10 n15 n79 n80 n86 n92)
+drop if _m==2
+
+replace turnover_type=n07 if jahr==2005
+replace turnover=n08 if jahr==2005
+replace grosspay=n83 if jahr==2005
+
+replace relocated=1 if (n02aa==1 | n02ab==1 | n02ac==1) & jahr==2005
+replace relocated=0 if (n02aa==0 & n02ab==0 & n02ac==0) & jahr==2005
+
+replace integrated=1 if n03==1 & jahr==2005
+replace integrated=0 if n03==2 & jahr==2005
+
+
+replace exports_west_germany=n09a if n09a!=-9 & jahr==2005
+replace exports_east_germany=n09b if n09b!=-9 & jahr==2005
+replace exports_foreign=n09c+n09d+n09e if n09c!=-9 & n09d!=-9 & n09e!=-9 & jahr==2005
+
+replace int_inputs=n10 if n10!=-9 & jahr==2005
+
+replace investment=n15 if n15!=-9 & jahr==2005
+replace investment=0 if n15==. & jahr==2005 & _m==3
+
+replace collective_agreement=n79 if n79!=-9 & jahr==2005
+replace industry_agreement=n80 if n80!=-9 & jahr==2005
+
+replace ownership_structure=n86 if n86!=-9 & jahr==2005
+replace single_establishment=1 if n86==1 & jahr==2005
+replace single_establishment=0 if n86!=1 & jahr==2005 & n86!=-9 & _m==3
+
+replace parent_ownership=n92 if n92!=-9 & jahr==2005
+replace foreign_parent=1 if n92==3 & jahr==2005
+replace foreign_parent=0 if n92!=3 & jahr==2005 & n92!=-9 & _m==3
+
+
+drop n07 n08 n83 n02aa n02ab n02ac n03 n09a n09b n09c n09d n09e n10 n15 n79 n80 n86 n92
+drop _m
+
+
+
+
+*2005 survey - match to 2004 data
+quietly merge m:1 idnum using "${orig}/iabbp_2005.dta", keepusing(m02aa m02ab m02ac m03 m12a m12b m12c m12d m12e m13 m19 m52 m53 m91 m88 m07 m08 m59)
+drop if _m==2
+
+replace turnover_type=m07 if jahr==2004
+replace turnover=m08 if jahr==2004
+replace grosspay=m59 if jahr==2004
+
+replace relocated=1 if (m02aa==1 | m02ab==1 | m02ac==1) & jahr==2004
+replace relocated=0 if (m02aa==0 & m02ab==0 & m02ac==0) & jahr==2004
+
+replace integrated=1 if m03==1 & jahr==2004
+replace integrated=0 if m03==2 & jahr==2004
+
+
+replace exports_west_germany=m12a if m12a!=-9 & jahr==2004
+replace exports_east_germany=m12b if m12b!=-9 & jahr==2004
+replace exports_foreign=m12c+m12d+m12e if m12c!=-9 & m12d!=-9 & m12e!=-9 & jahr==2004
+
+replace int_inputs=m13 if m13!=-9 & jahr==2004
+
+replace investment=m19 if m19!=-9 & jahr==2004
+replace investment=0 if m19==. & jahr==2004 & _m==3
+
+replace collective_agreement=m52 if m52!=-9 & jahr==2004
+replace industry_agreement=m53 if m53!=-9 & jahr==2004
+
+replace ownership_structure=m88 if m88!=-9 & jahr==2004
+replace single_establishment=1 if m88==1 & jahr==2004
+replace single_establishment=0 if m88!=1 & jahr==2004 & m88!=-9 & _m==3
+
+replace parent_ownership=m91 if m91!=-9 & jahr==2004
+replace foreign_parent=1 if m91==3 & jahr==2004
+replace foreign_parent=0 if m91!=3 & jahr==2004 & m91!=-9 & _m==3
+
+drop m07 m08 m59 m02aa m02ab m02ac m03 m12a m12b m12c m12d m12e m13 m19 m52 m53 m91 m88
+drop _m
+
+
+
+*2004 survey - match to 2003 data
+quietly merge m:1 idnum using "${orig}/iabbp_2004.dta", keepusing(l08 l09 l68 l02a l02b l02c l03 l13a l13b l13c l13d l13e l14 l16 l91 l89 l64 l65)
+drop if _m==2
+
+replace turnover_type=l08 if jahr==2003
+replace turnover=l09 if jahr==2003
+replace grosspay=l68 if jahr==2003
+
+
+replace relocated=1 if (l02a==1 | l02b==1 | l02c==1) & jahr==2003
+replace relocated=0 if (l02a==0 & l02b==0 & l02c==0) & jahr==2003
+
+replace integrated=1 if l03==1 & jahr==2003
+replace integrated=0 if l03==2 & jahr==2003
+
+
+replace exports_west_germany=l13a if l13a!=-9 & jahr==2003
+replace exports_east_germany=l13b if l13b!=-9 & jahr==2003
+replace exports_foreign=l13c+l13d+l13e if l13c!=-9 & l13d!=-9 & l13e!=-9 & jahr==2003
+
+replace int_inputs=l14 if l14!=-9 & jahr==2003
+
+replace investment=l16 if l16!=-9 & jahr==2003
+replace investment=0 if l16==. & jahr==2003 & _m==3
+
+replace collective_agreement=l64 if l64!=-9 & jahr==2003
+replace industry_agreement=l65 if l65!=-9 & jahr==2003
+
+replace ownership_structure=l89 if l89!=-9 & jahr==2003
+replace single_establishment=1 if l89==1 & jahr==2003
+replace single_establishment=0 if l89!=1 & jahr==2003 & l89!=-9 & _m==3
+
+replace parent_ownership=l91 if l91!=-9 & jahr==2003
+replace foreign_parent=1 if l91==3 & jahr==2003
+replace foreign_parent=0 if l91!=3 & jahr==2003 & _m==3 & l91!=-9
+
+drop l08 l09 l68 l02a l02b l02c l03 l13a l13b l13c l13d l13e l14 l16 l91 l89 l64 l65
+drop _m
+
+
+replace turnover=. if turnover==-9 | turnover==-8
+replace grosspay=. if grosspay==-9 | grosspay==-8
+
+
+
+sum turnover_type-foreign_parent
+
+*weights 
+
+gen weight_survey=.
+
+
+foreach x of numlist 2004 2005 2006 2007 2008 2009 2010 2011 2012 {
+
+quietly merge m:1 idnum using "${orig}/iabbp_`x'.dta", keepusing(hr`x'q)
+drop if _m==2
+
+replace weight_survey=hr`x'q if jahr==`x'-1
+
+drop _m hr`x'q
+
+}
+
+replace weight_survey=round(weight_survey)
+
+
+*---------------------------------
+* Creating firm-level financials
+*---------------------------------
+
+gen missing_turnover=(turnover==.)
+
+gen logrevenues				= log(turnover)
+gen logexprevenues			= log(1+turnover*(exports_foreign/100))
+replace logexprevenues		= . if exports_foreign==.
+
+gen logdomrevenues=log(1+turnover*(1-(exports_foreign/100)))
+replace logdomrevenues=. if exports_foreign==.
+
+gen trade=(exports_foreign>0)
+replace trade=. if exports_foreign==.
+
+gen logexprevenues2 = log(turnover*(exports_foreign/100))
+replace logexprevenues2=. if exports_foreign==.
+
+gen logdomrevenues2 =log(turnover*(1-(exports_foreign/100)))
+replace logdomrevenues2=. if exports_foreign==.
+
+gen cost 		= (int_inputs*turnover/100) + wemp_ft*365
+gen cost_sales 	= cost/turnover
+
+gen logprofits2		= log(turnover*(1-int_inputs/100) - grosspay*12)	
+gen logprofits		= log(turnover-cost) 
+gen logrev_emp 		= logrevenues - l_emp_tot /*Aca tendriamos que usar la medida de employment con todos los trabajadores*/
+ 
+
+gen exp_sh 		= exports_foreign
+gen wb_sh 		= (wemp_imm_ft + wemp_nat_ft)/cost
+gen imm_sh 		= nemp_imm_ft/(nemp_imm_ft + nemp_nat_ft)
+gen emp_sh_coll = tot_emp_coll / (tot_emp_coll + tot_emp_ncoll)
+gen premium 	= (wemp_imm_ft/nemp_imm_ft)/(wemp_nat_ft/nemp_nat_ft)
+
+
+foreach x in "exp_sh" "trade" "wb_sh" "cost_sales" "imm_sh" "l_emp_tot" "emp_sh_coll" "premium" "age" {
+
+	gen auxx=`x' if jahr==2003
+	bysort betnr: egen `x'_03=mean(auxx)
+	drop auxx
+
+ }
+ 
+ foreach x in "cost_sales" {
+	gen auxx=`x' if jahr==2008
+	bysort betnr: egen `x'_08=mean(auxx)
+	drop auxx
+}
+
+* Variables to select the sample 
+
+bysort betnr: egen count_obs=count(jahr)
+bysort betnr: egen min_emp=min(az_ges)
+bysort betnr: egen count_missrev=count(turnover)
+ 
+*-------------------------------------------------------------------------------
+* Sample restrictions
+*-------------------------------------------------------------------------------
+
+drop if missing(tradeable3) | missing(ind_2dig) | missing(local_labor11)
+drop if nemp_nat_ft==0 | wemp_nat_ft==0
+clonevar wb_ger     =  wemp_nat_ft
+
+
+* Save
+save "${data}/dataset_epsilon_estimation.dta", replace
+
+log close
+
+
