@@ -1,0 +1,180 @@
+July 27th, 2026
+
+Dear Florian,
+
+Re: JPE manuscript 20211186, "Firm Heterogeneity and the Impact of Immigration:
+Evidence from German Establishments" (Brinatti and Morales) -- Response to
+reproducibility report, Iteration 1
+
+Thank you and your reproducibility team for the thorough review of our
+replication package. We address every point raised below, following the
+order of your report, and describe exactly what has been changed in the
+package. All README section references below are to the revised README.txt
+included in this deposit.
+
+--------------------------------------------------------------------------------
+1. DATA CITATIONS (Report Section 2, item 1; Section 5 "Details on each Data
+   Source")
+--------------------------------------------------------------------------------
+
+We have added a full citation for every dataset used in the paper, both in
+the README and in the paper itself.
+
+README: a new Section 8 ("Data Citations") gives a complete citation for
+every dataset, organized in three groups and cross-referenced from every
+place the dataset is first described (Sections 2.1-2.3):
+  - 8.1 Confidential FDZ data: LIAB Longitudinal Model 1993-2014 (LIAB LM
+    9314; Heining, Klosterhuber, Lehnert and Seth 2016), the IAB
+    Establishment Panel waves 2004-2012, and SIEED 7518 v1 (Berge et al.
+    2020, DOI 10.5164/IAB.SIEED7518.de.en.v1), each with its FDZ project
+    number (fdz1328 / fdz2224).
+  - 8.2 Public secondary data: the Destatis CPI series, World Bank World
+    Development Indicators, the World Input-Output Database (Timmer et al.
+    2015), and the OECD series underlying the Section 6.1 dollar-gains
+    conversion, each with its dataset identifier/DOI and access URL.
+  - 8.3 Data derived from published academic work with no independent
+    public data DOI: the Kropp and Schwengler (2011) local-labor-market
+    concordance and the Peri and Sparber (2009) O*NET occupational
+    task-content mapping.
+
+Paper: Citations have been inserted at the relevant points
+in the manuscript: the data description, the CPI deflation step, the
+GDP_RoW_Ger and tradeable-share calibration moments, the Section 6.1
+dollar-gains conversion, and the local-labor-market and O*NET task-content
+descriptions. See pdf Brinatti_Morales_final_draft
+
+--------------------------------------------------------------------------------
+2. MISSING DATASETS PREVENTING REPRODUCTION OF SOME EXHIBITS (Report Section
+   2, item 2; Section 8 "Replication"; Section 9.3)
+--------------------------------------------------------------------------------
+
+We investigated each of the three files your team reported as missing.
+
+(a) sieed_7518_v1.dta (blocked Tables A3-A5, Figures 2, A5, A7, A8): we
+confirmed this file is included in the package at
+sieed_analysis/orig/sieed_7518_v1.dta, and that every do-file that reads it
+(1a_create_data_event_study.do, 1c_create_data_figA7.do) references the
+identical filename and case. There was an issue with file name capitalization that created the issue.
+
+(b) crosswalk_beruf_gr_blossfeld.dta (blocked Tables A6-A8, Figure A9): this
+is not a raw/shipped file but an intermediate dataset that
+3_crosswalk_occupation_blossfeld.do constructs and
+18_immigrant_comparative_advantage.do subsequently reads. There was an issue with file name capitalization that created the issue.
+
+(c) WIOT2012_October16_ROW.dta (blocked both calibration_external moments):
+we confirmed this file is included at
+calibration_external/data/WIOT2012_October16_ROW.dta and that both
+do-files that use it (tradable_consumption_share.do and gdp_per_worker_*.do)
+reference it with matching case and path. The path for this file was incorrect in the original submission.
+
+--------------------------------------------------------------------------------
+3. TABLE OF WHICH EXHIBITS REQUIRE CONFIDENTIAL DATA (Report Section 2, item
+   3)
+--------------------------------------------------------------------------------
+
+README Section 6 ("Mapping of Exhibits to Programs") now includes a
+"Confidential data?" column for every table, figure, and calibration moment
+in the paper, indicating whether reproducing it requires genuine FDZ access
+(Section 2.1) or can be done entirely from the public data and structural
+model shipped in the package. Only the model-side component of Table 1,
+Table 2, Tables D1-D3, Figure 4, and Figures D1-D2 fall in the latter
+category; every other exhibit is built from the confidential LIAB, IAB
+Establishment Panel, or SIEED data (or, for Table C7 and Figure 3, combines
+a confidential-data component with a model component) and cannot be
+reproduced from the shipped test data alone.
+
+--------------------------------------------------------------------------------
+4. INSTRUCTIONS FOR ACCESSING THE CONFIDENTIAL DATA (Report Section 2, item
+   4)
+--------------------------------------------------------------------------------
+
+README Section 2.1 now includes step-by-step access instructions: submitting
+a request form and project description by email to the FDZ
+(iab.fdz@iab.de); the FDZ's review and contract with the researcher's
+institution; no monetary cost as of May 2026 (to be reconfirmed with the
+FDZ); and a description of the Josua remote-access tool used for most of
+this project, with on-site access also available at a number of locations
+(linked in the README). We note that access terms are set by the FDZ and may
+change over time; we have stated this explicitly and dated the description.
+
+--------------------------------------------------------------------------------
+5. PRESERVATION PERIOD AND AFFIRMATION OF SUPPORT FOR REPLICATION CHECKS
+   (Report Section 5, required items)
+--------------------------------------------------------------------------------
+
+New README Section 2.5 states that (i) the FDZ preserves its standardized
+data products independently of individual research projects and makes
+superseded versions available on request, and that IAB policy guarantees
+data access for replication purposes for ten years from the date of
+publication; and (ii) the authors affirm their commitment to preserving the
+code and permitted materials for at least five years post-publication and to
+providing reasonable assistance with clarification and replication requests,
+including guidance on FDZ data access. Direct contact emails for both
+authors are included.
+
+--------------------------------------------------------------------------------
+6. CODEBOOK (Report Section 5, required item)
+--------------------------------------------------------------------------------
+
+A full variable-by-variable codebook (variable names, storage types, labels,
+and coded categories, in English) for every raw/test .dta file shipped in
+liab_analysis/orig/ and sieed_analysis/orig/ is provided as
+README_Appendix_Codebooks.txt and referenced from README Section 7.
+
+--------------------------------------------------------------------------------
+7. SOFTWARE AND COMPUTATIONAL REQUIREMENTS (Report Section 9.1)
+--------------------------------------------------------------------------------
+
+We added the `require` Stata package to the installation list in README
+Section 3.1; it was previously listed only inside a commented-out install
+block in master_file.do and was easy to miss when reading the README alone.
+We also added memory and storage requirements as new README Section 3.4:
+the confidential-data analysis runs entirely on FDZ servers (no local
+provisioning needed by replicators), and the MATLAB structural model runs
+on any standard machine meeting MathWorks' 8 GB RAM recommendation, with the
+model_analysis folder itself under 15 MB.
+
+--------------------------------------------------------------------------------
+8. NUMERICAL AND STRUCTURAL DISCREPANCIES NOTED IN YOUR CHECK (Report Section
+   9.3)
+--------------------------------------------------------------------------------
+
+We note, and do not believe further action is needed on, the following:
+  - The value mismatches your team observed across Tables A1-A2, C1, C2-C4,
+    C3, C5, C6, C7, C8-C13, Kappa, and Figures 1, A1-A4, A6, C1 are expected:
+    as stated in README Sections 2.1 and 3.3, the shipped orig/ files are
+    FDZ-provided TEST (dummy) data and cannot reproduce the published
+    numbers under any circumstances; only genuine FDZ data access does so.
+  - The rounding discrepancies you flagged in Table 1 and Table C7 (e.g.
+    30.82 vs. 30.83) reflect FDZ statistical disclosure rounding applied
+    when results are exported from the secure environment, not a
+    computational error.
+  - Figure 3: the structural issues you describe (non-tradeable decile 3
+    empty, several bins with N=2, values shown pre-normalization) are a
+    direct consequence of running the same test-data pipeline described
+    above on a small dummy sample, and are consistent with, not additional
+    to, the general test-data caveat. On the "empty figure_3.png" file: we
+    confirmed the code (Validation_cross_CI_heterog.do, line 177) writes
+    figure_3.jpg, not .png, and that our reference copy of this file
+    (model_analysis/output/figures/figure_3.jpg, ~420 KB) is a valid,
+    non-empty image; we believe your team's empty file resulted from the
+    graph-export step failing further downstream given the malformed
+    test-data deciles above, consistent with the same root cause, rather
+    than a separate file-naming defect.
+
+--------------------------------------------------------------------------------
+9. DEPOSIT TITLE AND AUTHOR/AFFILIATION METADATA (Report Section 6, required
+   items)
+--------------------------------------------------------------------------------
+
+We changed the title of the readme to follow the guidelines stated in the report.
+
+--------------------------------------------------------------------------------
+
+We believe this addresses every item in your report. Please let us know if
+any further clarification or changes would be helpful.
+
+Sincerely,
+
+Agostina Brinatti
+Nicolas Morales
