@@ -4,10 +4,10 @@
 
 The package contains:
 
-* 195 files
+* 137 files
 
-* 49 Duplicate files
-* 2 Files larger than 100MB
+* 34 Duplicate files
+* No files larger than 100MB
 * 3 files of size 0Kb
 
 
@@ -16,14 +16,11 @@ The package contains:
 | /Brinatti_Morales_Replication_Package/model_analysis/code/model/heterogeneous/Results_counterfactuals/.gitkeep | 0.0 | da39a3ee5e6b4b0d3255bfef95601890afd80709 |
 | /Brinatti_Morales_Replication_Package/model_analysis/code/model/homogeneous/Results_counterfactuals/.gitkeep | 0.0 | da39a3ee5e6b4b0d3255bfef95601890afd80709 |
 | /Brinatti_Morales_Replication_Package/model_analysis/code/model/policies/Results_counterfactuals/.gitkeep | 0.0 | da39a3ee5e6b4b0d3255bfef95601890afd80709 |
-| /Brinatti_Morales_Replication_Package/~$Descriptive_results_summary_final.xlsx | 0.0 | 4f0ab9e75659472ad994ce360593cb35b78b6cee |
 | /Brinatti_Morales_Replication_Package/desktop.ini | 0.0 | 05d1c997b96033c23ba7579ff2e85dcf82ee90af |
 | /Brinatti_Morales_Replication_Package/model_analysis/output/tables/sec61_aggregates.tex | 0.0 | d70fee5904ae7cff0a0b5d460b17864d86267ffb |
 | /Brinatti_Morales_Replication_Package/calibration_external/desktop.ini | 0.0 | 3fa052fe4e554cf12edcaefffd8f945020f32205 |
-| /Brinatti_Morales_Replication_Package/calibration_external/data/desktop.ini | 0.0 | 3fa052fe4e554cf12edcaefffd8f945020f32205 |
 | /Brinatti_Morales_Replication_Package/calibration_external/prog/desktop.ini | 0.0 | 3fa052fe4e554cf12edcaefffd8f945020f32205 |
 | /Brinatti_Morales_Replication_Package/liab_analysis/desktop.ini | 0.0 | 3fa052fe4e554cf12edcaefffd8f945020f32205 |
-| /Brinatti_Morales_Replication_Package/liab_analysis/data/desktop.ini | 0.0 | 3fa052fe4e554cf12edcaefffd8f945020f32205 |
 | /Brinatti_Morales_Replication_Package/liab_analysis/log/desktop.ini | 0.0 | 3fa052fe4e554cf12edcaefffd8f945020f32205 |
 | /Brinatti_Morales_Replication_Package/liab_analysis/orig/desktop.ini | 0.0 | 3fa052fe4e554cf12edcaefffd8f945020f32205 |
 | /Brinatti_Morales_Replication_Package/liab_analysis/prog/desktop.ini | 0.0 | 3fa052fe4e554cf12edcaefffd8f945020f32205 |
@@ -42,9 +39,6 @@ The package contains:
 | /Brinatti_Morales_Replication_Package/model_analysis/code/model/policies/Equations_equilibrium/desktop.ini | 0.0 | 3fa052fe4e554cf12edcaefffd8f945020f32205 |
 | /Brinatti_Morales_Replication_Package/model_analysis/code/model/policies/Results_counterfactuals/desktop.ini | 0.0 | 3fa052fe4e554cf12edcaefffd8f945020f32205 |
 | /Brinatti_Morales_Replication_Package/model_analysis/code/stata_plots/desktop.ini | 0.0 | 3fa052fe4e554cf12edcaefffd8f945020f32205 |
-| /Brinatti_Morales_Replication_Package/model_analysis/data/desktop.ini | 0.0 | 3fa052fe4e554cf12edcaefffd8f945020f32205 |
-| /Brinatti_Morales_Replication_Package/model_analysis/data/inputs/desktop.ini | 0.0 | 3fa052fe4e554cf12edcaefffd8f945020f32205 |
-| /Brinatti_Morales_Replication_Package/model_analysis/data/raw/desktop.ini | 0.0 | 3fa052fe4e554cf12edcaefffd8f945020f32205 |
 | /Brinatti_Morales_Replication_Package/model_analysis/output/desktop.ini | 0.0 | 3fa052fe4e554cf12edcaefffd8f945020f32205 |
 | /Brinatti_Morales_Replication_Package/model_analysis/output/figures/desktop.ini | 0.0 | 3fa052fe4e554cf12edcaefffd8f945020f32205 |
 | /Brinatti_Morales_Replication_Package/model_analysis/output/intermediate/desktop.ini | 0.0 | 3fa052fe4e554cf12edcaefffd8f945020f32205 |
@@ -54,17 +48,11 @@ The package contains:
 | /Brinatti_Morales_Replication_Package/model_analysis/output/tables/desktop.ini | 0.0 | 3fa052fe4e554cf12edcaefffd8f945020f32205 |
 | /Brinatti_Morales_Replication_Package/model_analysis/scripts/desktop.ini | 0.0 | 3fa052fe4e554cf12edcaefffd8f945020f32205 |
 | /Brinatti_Morales_Replication_Package/sieed_analysis/desktop.ini | 0.0 | 3fa052fe4e554cf12edcaefffd8f945020f32205 |
-| /Brinatti_Morales_Replication_Package/sieed_analysis/data/desktop.ini | 0.0 | 3fa052fe4e554cf12edcaefffd8f945020f32205 |
 | /Brinatti_Morales_Replication_Package/sieed_analysis/orig/desktop.ini | 0.0 | 3fa052fe4e554cf12edcaefffd8f945020f32205 |
 | /Brinatti_Morales_Replication_Package/sieed_analysis/prog/desktop.ini | 0.0 | 3fa052fe4e554cf12edcaefffd8f945020f32205 |
 | /Brinatti_Morales_Replication_Package/model_analysis/output/tables/sec61_dollar_gains.tex | 0.0 | a04e30d865087637ab8d603aab5531d3010bb30a |
 | /Brinatti_Morales_Replication_Package/model_analysis/output/tables/sec63_decomposition.tex | 0.0 | 0c6f019965799e53454fa5352cc54ed58f592e51 |
-| /Brinatti_Morales_Replication_Package/model_analysis/data/raw/oecd_weekly_hours_germany_2019_full_time.csv | 0.0 | 505a2c9a22991196ae9d7b2266da960261b3e811 |
-| /Brinatti_Morales_Replication_Package/model_analysis/data/raw/oecd_weekly_hours_germany_2019_all_employees.csv | 0.0 | 434935043aa32aed9f09fa9a0a8ad27c5c878c1f |
-| /Brinatti_Morales_Replication_Package/model_analysis/data/raw/oecd_dependent_employees_germany_2019.csv | 0.0 | fff7b96bf3ed23a370bea894e7a0350fb484dc4f |
 | /Brinatti_Morales_Replication_Package/model_analysis/output/tables/table2.tex | 0.0 | 8834a256d3b86b3809c55691a5d0931b3e74ab71 |
-| /Brinatti_Morales_Replication_Package/model_analysis/data/raw/oecd_gdp_germany_2019_usd_ppp.csv | 0.0 | 14ac7f8357f0d103c744e9b0761265e2f0ee3300 |
-| /Brinatti_Morales_Replication_Package/model_analysis/data/README.md | 0.0 | f6eb24d8ccdaf6d8018cec54b1341aef5bde222f |
 | /Brinatti_Morales_Replication_Package/model_analysis/output/tables/tableD3.tex | 0.0 | 2ea03b0640946d89d48d9da7c4a7f6ef6f87171d |
 | /Brinatti_Morales_Replication_Package/liab_analysis/prog/estimate_nu_cont.m | 0.0 | 45e02af90abffa579411d4e80ff6b3af86649cb8 |
 | /Brinatti_Morales_Replication_Package/liab_analysis/prog/solve_nu.m | 0.0 | ea040411185909fbd1be5bd0b51d42737c46a64c |
@@ -80,7 +68,6 @@ The package contains:
 | /Brinatti_Morales_Replication_Package/model_analysis/code/model/homogeneous/Equations_equilibrium/profitnexptsd.m | 0.0 | 2923ab0d031cabf28fd9b7e489bbaa13cd611183 |
 | /Brinatti_Morales_Replication_Package/liab_analysis/prog/2_local_labor_markets.do | 0.0 | 4341d7baba40156f1a6d09410c32507d6e4bf4d3 |
 | /Brinatti_Morales_Replication_Package/model_analysis/code/model/homogeneous/Equations_equilibrium/profitnexpntsd.m | 0.0 | bb9703b1de1d1e827c1bc32669c132e97271a5a4 |
-| /Brinatti_Morales_Replication_Package/model_analysis/data/raw/oecd_avg_annual_wage_germany_2019_eo2020.csv | 0.0 | eba8ff7f47f414e01b10a7d92e50faa2cb3cfbe2 |
 | /Brinatti_Morales_Replication_Package/model_analysis/output/tables/table1.tex | 0.0 | 320cfcd2d66bacb0d10574764801c087e582c26b |
 | /Brinatti_Morales_Replication_Package/model_analysis/code/model/policies/Equations_equilibrium/profitnexpntsd.m | 0.0 | 66b713426e863fcfb6b7bdd02ce02e128985d96e |
 | /Brinatti_Morales_Replication_Package/model_analysis/code/stata_plots/sj_grstyle.do | 0.0 | 5cb3ffee91950f60a03708948a05c49db3c5866a |
@@ -108,7 +95,6 @@ The package contains:
 | /Brinatti_Morales_Replication_Package/model_analysis/code/model/policies/Equations_equilibrium/GE.m | 0.0 | 16e0b2d64b31ff5de046e4f6c594c798d12615a4 |
 | /Brinatti_Morales_Replication_Package/model_analysis/code/model/heterogeneous/Equations_equilibrium/GE.m | 0.0 | edaa05de292479673bcd874afc4d113828b53858 |
 | /Brinatti_Morales_Replication_Package/model_analysis/code/model/homogeneous/Counterfactual_homogeneous_closed.m | 0.0 | 0276f0c349cba8ec7e1eb7cbf120ef454d2ed345 |
-| /Brinatti_Morales_Replication_Package/liab_analysis/orig/cpigermany.dta | 0.0 | 7486430af7381bd0f0792fea8a2ff7a324baf9d3 |
 | /Brinatti_Morales_Replication_Package/model_analysis/code/model/heterogeneous/Other_functions/Heterogeneity.m | 0.0 | c127ac11381c2a07f9f1b80213af2543433d37d5 |
 | /Brinatti_Morales_Replication_Package/model_analysis/code/model/policies/Equations_equilibrium/profits.m | 0.0 | 80c2c98c68aaf51f07a1cda7edcdd88cbf5b62d4 |
 | /Brinatti_Morales_Replication_Package/model_analysis/code/model/homogeneous/Other_functions/Heterogeneity.m | 0.0 | 77cf67270c49964aecee7905694e3b47fdf347d7 |
@@ -125,7 +111,6 @@ The package contains:
 | /Brinatti_Morales_Replication_Package/model_analysis/scripts/master.m | 0.0 | bbffbc734985b7864da607a731e974230d730c2a |
 | /Brinatti_Morales_Replication_Package/master_file.do | 0.0 | bd168375fa9687c59835671f2750f8d93f5c9345 |
 | /Brinatti_Morales_Replication_Package/model_analysis/code/model/policies/Counterfactual_to_compare_policies.m | 0.0 | 3a71cc2a4ffa08b306dd0b2efb54c0d18c29daf5 |
-| /Brinatti_Morales_Replication_Package/model_analysis/data/raw/README.md | 0.0 | ffe907d0c3937a4ec3ca9a705b28ab4b78b421ea |
 | /Brinatti_Morales_Replication_Package/model_analysis/code/model/heterogeneous/Other_functions/ComputeMoments.m | 0.0 | e9976e35c6287d5506f5b0f4cfd19795031442b7 |
 | /Brinatti_Morales_Replication_Package/model_analysis/code/stata_plots/Counterfactual_plots_heterog.do | 0.0 | deb6e0efcd41bc1cb425d2f4f8ed96833c6c9297 |
 | /Brinatti_Morales_Replication_Package/liab_analysis/prog/3_crosswalk_occupation_blossfeld.do | 0.01 | 320874ef559edb618b42c5f21ec33a61bb0dd241 |
@@ -144,12 +129,10 @@ The package contains:
 | /Brinatti_Morales_Replication_Package/liab_analysis/prog/5_dataset_for_instrument_validation.do | 0.01 | c2e0460da41a1230b7d807db1b2f6b08f4a5bf6a |
 | /Brinatti_Morales_Replication_Package/sieed_analysis/prog/1c_create_data_figA7.do | 0.01 | ae3518c8bb1fb2e75f3ed3a69ec6185ce4ecd187 |
 | /Brinatti_Morales_Replication_Package/model_analysis/code/stata_plots/Counterfactual_plots_policies.do | 0.01 | fe707241cc127426f748428bd721da6ee828b20f |
-| /Brinatti_Morales_Replication_Package/model_analysis/data/inputs/Validation_data.xlsx | 0.01 | ca5d89fcbf25d75d1a1e17896f03a3a6a47224ff |
 | /Brinatti_Morales_Replication_Package/sieed_analysis/prog/1a_create_data_event_study.do | 0.01 | 897ad394c254b39928cc7453226071424c41d30d |
 | /Brinatti_Morales_Replication_Package/liab_analysis/prog/19_moments_calculation.do | 0.01 | 23ab6908ffb890a4868663b5249d67244e1342b1 |
 | /Brinatti_Morales_Replication_Package/model_analysis/code/model/homogeneous/Equations_equilibrium/equilLoop.m | 0.01 | b83d6c54b4abcdd148c1f7691ab70d090d0b052a |
 | /Brinatti_Morales_Replication_Package/liab_analysis/prog/8_validation_regressions.do | 0.01 | b5c6651631a27bf70f5342dc878f275cfc5d5b33 |
-| /Brinatti_Morales_Replication_Package/model_analysis/data/raw/wdi_population_2011.csv | 0.02 | 35508bebd1b39c041ca9d084e7e0fd6e36ff5a8b |
 | /Brinatti_Morales_Replication_Package/sieed_analysis/prog/2a_results_event_studies.do | 0.02 | d826f27b1f3103108c03e8cf240f54783f1adc97 |
 | /Brinatti_Morales_Replication_Package/model_analysis/code/model/heterogeneous/Equations_equilibrium/equilLoop.m | 0.02 | 3d7b217990f691fe538cb9d21ed44ea6fae77f78 |
 | /Brinatti_Morales_Replication_Package/liab_analysis/prog/4_dataset_firm_level.do | 0.02 | 75b02968625ccc63052287919f8c068fb4c1be86 |
@@ -157,54 +140,13 @@ The package contains:
 | /Brinatti_Morales_Replication_Package/model_analysis/code/model/policies/Equations_equilibrium/equilLoop.m | 0.02 | d73294150b2b471c8d60c395c60ceea8378d55bd |
 | /Brinatti_Morales_Replication_Package/sieed_analysis/prog/1b_add_local_labor_market.do | 0.02 | b50539fa32d1c59612210310f6201def66ead005 |
 | /Brinatti_Morales_Replication_Package/liab_analysis/prog/18_immigrant_comparative_advantage.do | 0.03 | 16dac2e45c6cc1b8fa658ca6ed7475d345e5e796 |
-| /Brinatti_Morales_Replication_Package/model_analysis/data/raw/wdi_gdp_per_capita_ppp_2011.csv | 0.03 | 0925c3fd09a1bf71f4240d8d2fea5454c5467710 |
 | /Brinatti_Morales_Replication_Package/liab_analysis/prog/7_dataset_for_epsilon_estimation.do | 0.03 | 14bf938babdf903914b73c02dc3fc780822bb098 |
 | /Brinatti_Morales_Replication_Package/README.txt | 0.04 | db8e3110914e908b61f58d8f83f762424a390270 |
 | /Brinatti_Morales_Replication_Package/model_analysis/code/model/Export_latex_tables.m | 0.04 | e49211b39f6fc04dc31e075bb755b08ce4fcd7f1 |
-| /Brinatti_Morales_Replication_Package/liab_analysis/orig/Onet_Peri_Sparber_beruf_gr.dta | 0.04 | 0b0913f3dbb903b757c7ca02da02d3aa65f817e0 |
 | /Brinatti_Morales_Replication_Package/liab_analysis/prog/17_empirical_facts.do | 0.04 | e25e20b15a38784a218f3176a8a9a72ffc2ff8cc |
 | /Brinatti_Morales_Replication_Package/README_Appendix_Codebooks.txt | 0.06 | a907541658978b4af2fd1b714152c0bb61d22165 |
-| /Brinatti_Morales_Replication_Package/liab_analysis/orig/local labor markets.dta | 0.11 | 710daa8b2bd2793fb5e99f9c4a9f2beab2824538 |
 | /Brinatti_Morales_Replication_Package/model_analysis/output/figures/figure_D2.jpg | 0.12 | 3426082a208394cab29c77806cbceabfd6aff9dd |
 | /Brinatti_Morales_Replication_Package/model_analysis/output/figures/figure_4.jpg | 0.16 | f821945be4669605b40d84f0be0699d2859859bb |
-| /Brinatti_Morales_Replication_Package/model_analysis/code/model/homogeneous/Results_counterfactuals/Counterfactual_homogeneous_closed.mat | 0.28 | a4d4b42f6496a59fd2e584b477f415786b432a6d |
-| /Brinatti_Morales_Replication_Package/model_analysis/output/intermediate/homogeneous/Counterfactual_homogeneous_closed.mat | 0.28 | a4d4b42f6496a59fd2e584b477f415786b432a6d |
-| /Brinatti_Morales_Replication_Package/model_analysis/code/model/homogeneous/Results_counterfactuals/Counterfactual_homogeneous_open.mat | 0.29 | 832c177c391b42f25257ceb7883489294898ac23 |
-| /Brinatti_Morales_Replication_Package/model_analysis/output/intermediate/homogeneous/Counterfactual_homogeneous_open.mat | 0.29 | 832c177c391b42f25257ceb7883489294898ac23 |
 | /Brinatti_Morales_Replication_Package/model_analysis/output/figures/figure_D1.jpg | 0.38 | d3a834ac5514a2ae9f4e347125896c6657216dd3 |
-| /Brinatti_Morales_Replication_Package/model_analysis/code/model/heterogeneous/Results_counterfactuals/Counterfactual_heterogeneous_closed.mat | 0.39 | 0f548219099ad0a35f4df72ea9e4e2dc6bb31471 |
-| /Brinatti_Morales_Replication_Package/model_analysis/output/intermediate/heterogeneous/Counterfactual_heterogeneous_closed.mat | 0.39 | 0f548219099ad0a35f4df72ea9e4e2dc6bb31471 |
-| /Brinatti_Morales_Replication_Package/model_analysis/code/model/policies/Results_counterfactuals/Counterfactual_to_compare_policies_top_onlyt.mat | 0.4 | 3caa83c93d402b045738c028d54e732ff3139abc |
-| /Brinatti_Morales_Replication_Package/model_analysis/output/intermediate/policies/Counterfactual_to_compare_policies_top_onlyt.mat | 0.4 | 3caa83c93d402b045738c028d54e732ff3139abc |
-| /Brinatti_Morales_Replication_Package/model_analysis/code/model/policies/Results_counterfactuals/Counterfactual_to_compare_policies_top10.mat | 0.4 | 87b80aeaa28a9053583b6ae8de7be56382eb5483 |
-| /Brinatti_Morales_Replication_Package/model_analysis/output/intermediate/policies/Counterfactual_to_compare_policies_top10.mat | 0.4 | 87b80aeaa28a9053583b6ae8de7be56382eb5483 |
 | /Brinatti_Morales_Replication_Package/model_analysis/output/figures/figure_3.jpg | 0.4 | 8745839bdc5ac72ead03b08ebc5ced26dcba8237 |
-| /Brinatti_Morales_Replication_Package/model_analysis/code/model/policies/Results_counterfactuals/Counterfactual_to_compare_policies_bottom_onlyt.mat | 0.4 | e62eed64dd216fb9a862f07ef31e91191ff5bc2d |
-| /Brinatti_Morales_Replication_Package/model_analysis/output/intermediate/policies/Counterfactual_to_compare_policies_bottom_onlyt.mat | 0.4 | e62eed64dd216fb9a862f07ef31e91191ff5bc2d |
-| /Brinatti_Morales_Replication_Package/model_analysis/code/model/heterogeneous/Results_counterfactuals/Counterfactual_heterogeneous_open.mat | 0.41 | c876f268a183a6e3b2158173ffd777380c2115f0 |
-| /Brinatti_Morales_Replication_Package/model_analysis/output/intermediate/heterogeneous/Counterfactual_heterogeneous_open.mat | 0.41 | c876f268a183a6e3b2158173ffd777380c2115f0 |
-| /Brinatti_Morales_Replication_Package/model_analysis/code/model/policies/Results_counterfactuals/Counterfactual_to_compare_policies_basef.mat | 0.41 | cbfaf0fb56ea96298bf392d483db704784d7ab19 |
-| /Brinatti_Morales_Replication_Package/model_analysis/output/intermediate/policies/Counterfactual_to_compare_policies_basef.mat | 0.41 | cbfaf0fb56ea96298bf392d483db704784d7ab19 |
-| /Brinatti_Morales_Replication_Package/model_analysis/code/model/policies/Results_counterfactuals/Counterfactual_to_compare_policies_nobasef.mat | 0.42 | 2a521381f1623f92947692f4fede5d2ee611c536 |
-| /Brinatti_Morales_Replication_Package/model_analysis/output/intermediate/policies/Counterfactual_to_compare_policies_nobasef.mat | 0.42 | 2a521381f1623f92947692f4fede5d2ee611c536 |
-| /Brinatti_Morales_Replication_Package/model_analysis/output/intermediate/policies/Validation_GER_output_subsidy_notax_top_onlyt.xlsx | 0.75 | 2fc161c3b13491d920dc3961936d1c136dff0a1b |
-| /Brinatti_Morales_Replication_Package/model_analysis/output/intermediate/policies/Validation_GER_output_subsidy_notax_top10.xlsx | 0.75 | 961c35464bb7415364ac4cf24625f9eb30a8664e |
-| /Brinatti_Morales_Replication_Package/model_analysis/output/intermediate/policies/Validation_GER_output_subsidy_notax_bottom_onlyt.xlsx | 0.76 | 70d8810ddd5fd0055545eeba58173c5d9149f81c |
-| /Brinatti_Morales_Replication_Package/model_analysis/output/intermediate/heterogeneous/Results_GER_Baseline.xlsx | 0.77 | 2972f1393e69ea008ec18120d1af9416e7559749 |
-| /Brinatti_Morales_Replication_Package/model_analysis/output/intermediate/policies/Validation_GER_output_subsidy_notax_basef.xlsx | 0.77 | 4699d5e540982bf1174f68095c89b399402f6997 |
-| /Brinatti_Morales_Replication_Package/model_analysis/output/intermediate/policies/Validation_GER_output_subsidy_notax_nobasef.xlsx | 0.79 | baacb511b685f103793607317a18d8f442fea9de |
 | /Brinatti_Morales_Replication_Package/Brinatti_Morales_final_draft.pdf | 2.79 | 79129e91e1810bf1949006a29fce5cae37dd18b6 |
-| /Brinatti_Morales_Replication_Package/sieed_analysis/orig/SIEED_7518_v1_bhp_basis_v1.dta | 11.89 | 7bd74c4634f8f573e01ae6bc9d47372a51c06a05 |
-| /Brinatti_Morales_Replication_Package/liab_analysis/orig/liab_lm_9314_v1_bhp_basis_v1.dta | 25.01 | 068e6ec47bc1a2377acefce8e0c59514cf5236c4 |
-| /Brinatti_Morales_Replication_Package/liab_analysis/orig/iabbp_2008.dta | 26.95 | 9ba142db0ae78e768cb6c672a0c0f86af7d6641a |
-| /Brinatti_Morales_Replication_Package/liab_analysis/orig/iabbp_2007.dta | 27.11 | 511b59c0a2ce27dccefe286f39095bcb4a15d6fb |
-| /Brinatti_Morales_Replication_Package/liab_analysis/orig/iabbp_2004.dta | 28.95 | 4ccec418e755233a5b565a6287b91d3c2e2e6fae |
-| /Brinatti_Morales_Replication_Package/liab_analysis/orig/iabbp_2011.dta | 29.7 | 877f340255c2347fd0db827256d77044b3424840 |
-| /Brinatti_Morales_Replication_Package/liab_analysis/orig/iabbp_2010.dta | 29.81 | 6fcf830831d2121d8d08c5cdcae6267c8e9e3638 |
-| /Brinatti_Morales_Replication_Package/liab_analysis/orig/iabbp_2006.dta | 29.89 | 5825f75718ae5485259c0616bf88f40e3b77f9dc |
-| /Brinatti_Morales_Replication_Package/liab_analysis/orig/iabbp_2009.dta | 30.0 | d690ee0c6beb8d59ad2ef245f7b1d1d0030912c2 |
-| /Brinatti_Morales_Replication_Package/liab_analysis/orig/iabbp_2005.dta | 30.16 | 11184bf93e2cc88b5c47d742c32ec04c01539cb8 |
-| /Brinatti_Morales_Replication_Package/liab_analysis/orig/iabbp_2012.dta | 31.41 | d0e7169dbf019bd9732f8dbdb2607cae4b9f8aad |
-| /Brinatti_Morales_Replication_Package/calibration_external/data/WIOT2012_October16_ROW.dta | 52.66 | f6c71746f7065271ca1f96052376ffa4e1cd0f35 |
-| /Brinatti_Morales_Replication_Package/sieed_analysis/orig/sieed_7518_v1.dta | 149.31 | 06982c2579c71ad518ed866f1b946e75b5ce72b3 |
-| /Brinatti_Morales_Replication_Package/liab_analysis/orig/liab_lm_9314_v1_pers.dta | 867.08 | 6019880fa799f17d52fc7d34426c7e5011bb2e03 |
