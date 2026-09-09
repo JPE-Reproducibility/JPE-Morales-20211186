@@ -1,0 +1,631 @@
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/log/11_epsilon_pre_trend_test.log
+  log type:  text
+ opened on:   9 Sep 2026, 15:24:44
+
+. 
+. * Epsilon pre-trend test: lagged outcome regressions (Table C3)
+. * Agostina Brinatti & Nicolas Morales
+. * Source data: LIAB Longitudinal Model (version 1993-2014), IAB
+. 
+. /*      This dofile tests whether the shift-share instrument predicts lagged
+>         outcomes (pre-trend check). An insignificant coefficient supports the
+>         identifying assumption that instrument variation is exogenous to
+>         pre-existing firm trends.
+> 
+>         Output in this dofile:
+>           Tables 1-5 - Table C3: Pre-trend tests, lags h = 1,...,5
+> 
+>         Saved dataset:
+>           ${data}/epsilon_pretrend_bootstrapsample.dta — 5,000 bootstrap draws
+> 
+>         FDZ note: N (unweighted) reported via stats(N N_clust) in estout.
+>           The sum command at the end prints the 99% CI bounds for Table C3.
+> */
+. 
+. /*
+> 
+> Input datasets:
+> (i)  data_imm_effective_snap_draft: effective units of labor using the estimated kappa
+> (ii) "${data}/individual_level_sieed_notw0.dta": firm-year level with the outcome variable, and the instrument
+> 
+> output dataset: 
+> (i) "${data}/bootstrapsample_pre_trend_snap_draft.dta"
+> 
+> *This dofile perform the pre-trend analysis, and bootstrap the standard errors of each regression
+> 
+> */
+. 
+. clear
+
+. 
+. set more off
+
+. set matsize 10000
+set matsize ignored.
+    Matrix sizes are no longer limited by c(matsize) in modern Statas.  Matrix sizes are now limited by edition of Stata.  See limits for more details.
+
+. set linesize 255
+
+. set seed 1234
+
+. 
+. capture adopath++ ${prog}
+
+. 
+. 
+. 
+. use "${data}/dataset_epsilon_estimation.dta", clear
+
+. 
+. 
+. *Keep firms in sample of epsilon estimation 
+. 
+. merge 1:1 betnr jahr using "${data}/sample_epsilon_estimation.dta" , keepusing(sample_epsilon)
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                         9,596
+        from master                     9,596  (_merge==1)
+        from using                          0  (_merge==2)
+
+    Matched                               954  (_merge==3)
+    -----------------------------------------
+
+. drop _merge
+
+. 
+. 
+. *Bring the immigrant in terms of efficient units computed using the estimated kappa
+. 
+. merge 1:1 betnr jahr using "${data}/dataset_immigrant_effective_units.dta" , keepusing(emp_imm_eff)
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                        42,711
+        from master                         0  (_merge==1)
+        from using                     42,711  (_merge==2)
+
+    Matched                            10,550  (_merge==3)
+    -----------------------------------------
+
+. drop _merge
+
+. 
+. * Outcome and regressor variables for the wage regressions 
+. 
+. gen l_emp_imm_eff_nat = log(emp_imm_eff/nemp_nat_ft)
+(50,795 missing values generated)
+
+. 
+. *Outcome variables for Pre trends 
+. tsset betnr jahr
+
+Panel variable: betnr (unbalanced)
+ Time variable: jahr, 1993 to 2014, but with gaps
+         Delta: 1 unit
+
+. 
+. gen l_wbill_imm_natL1 = L1.l_wbill_imm_nat
+(50,986 missing values generated)
+
+. gen l_wbill_imm_natL2 = L2.l_wbill_imm_nat
+(51,113 missing values generated)
+
+. gen l_wbill_imm_natL3 = L3.l_wbill_imm_nat
+(51,239 missing values generated)
+
+. gen l_wbill_imm_natL4 = L4.l_wbill_imm_nat
+(51,582 missing values generated)
+
+. gen l_wbill_imm_natL5 = L5.l_wbill_imm_nat
+(51,851 missing values generated)
+
+. 
+. *-------------------------------------------------------------------------------
+. * Pre-trend test
+. *-------------------------------------------------------------------------------
+. 
+. 
+. ****************************
+. * Table 1
+. * Table C3: Pre-trend tests — lags h = 0,...,5
+. ****************************
+. 
+. * Variables: l_wbill_imm_nat (lag 0), l_wbill_imm_natL1-L5 (outcome
+. *   lagged 1-5 years); l_emp_imm_eff_nat (regressor, as in Table C1)
+. * Instrument: iv_r_shift_sharew_o_f (shift-share, same as Table C1)
+. * Selection: epsilon sample (sample_epsilon == 1)
+. * FE and SE: same as Table C1 (betnr, rt_fe, kt_fe; clustered at ind_labormkt)
+. * Table tests whether the instrument predicts outcomes prior to the sample
+. *   period. Insignificant coefficients at lags 1-5 support identifying assumption.
+. * N (unweighted) reported via stats(N N_clust) in estout.
+. 
+. ivreghdfe   l_wbill_imm_nat   ( l_emp_imm_eff_nat = iv_r_shift_sharew_o_f ) if sample_epsilon==1,  absorb(betnr rt_fe kt_fe) cluster(ind_labormkt)
+(MWFE estimator converged in 26 iterations)
+
+IV (2SLS) estimation
+--------------------
+
+Estimates efficient for homoskedasticity only
+Statistics robust to heteroskedasticity and clustering on ind_labormkt
+
+Number of clusters (ind_labormkt) =     52            Number of obs =      185
+                                                      F(  1,    51) =     0.20
+                                                      Prob > F      =   0.6586
+Total (centered) SS     =   27.5937977                Centered R2   =  -2.1403
+Total (uncentered) SS   =   27.5937977                Uncentered R2 =  -2.1403
+Residual SS             =  86.65165552                Root MSE      =    1.089
+
+-----------------------------------------------------------------------------------
+                  |               Robust
+  l_wbill_imm_nat | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+------------------+----------------------------------------------------------------
+l_emp_imm_eff_nat |  -1.589639   3.577211    -0.44   0.659     -8.77119    5.591912
+-----------------------------------------------------------------------------------
+Underidentification test (Kleibergen-Paap rk LM statistic):              1.788
+                                                   Chi-sq(1) P-val =    0.1812
+------------------------------------------------------------------------------
+Weak identification test (Cragg-Donald Wald F statistic):                1.074
+                         (Kleibergen-Paap rk Wald F statistic):          0.809
+Stock-Yogo weak ID test critical values: 10% maximal IV size             16.38
+                                         15% maximal IV size              8.96
+                                         20% maximal IV size              6.66
+                                         25% maximal IV size              5.53
+Source: Stock-Yogo (2005).  Reproduced by permission.
+NB: Critical values are for Cragg-Donald F statistic and i.i.d. errors.
+------------------------------------------------------------------------------
+Hansen J statistic (overidentification test of all instruments):         0.000
+                                                 (equation exactly identified)
+------------------------------------------------------------------------------
+Instrumented:         l_emp_imm_eff_nat
+Excluded instruments: iv_r_shift_sharew_o_f
+Partialled-out:       _cons
+                      nb: total SS, model F and R2s are after partialling-out;
+                          any small-sample adjustments include partialled-out
+                          variables in regressor count K
+------------------------------------------------------------------------------
+
+Absorbed degrees of freedom:
+-----------------------------------------------------+
+ Absorbed FE | Categories  - Redundant  = Num. Coefs |
+-------------+---------------------------------------|
+       betnr |        65          65           0    *|
+       rt_fe |        73           1          72     |
+       kt_fe |        45           6          39     |
+-----------------------------------------------------+
+* = FE nested within cluster; treated as redundant for DoF computation
+
+. estimates store IV_bsl_L0
+
+. ivreghdfe   l_wbill_imm_natL1 ( l_emp_imm_eff_nat = iv_r_shift_sharew_o_f ) if sample_epsilon==1,  absorb(betnr rt_fe kt_fe) cluster(ind_labormkt)
+(dropped 73 singleton observations)
+(MWFE estimator converged in 7 iterations)
+
+IV (2SLS) estimation
+--------------------
+
+Estimates efficient for homoskedasticity only
+Statistics robust to heteroskedasticity and clustering on ind_labormkt
+
+Number of clusters (ind_labormkt) =     15            Number of obs =       60
+                                                      F(  1,    14) =     0.32
+                                                      Prob > F      =   0.5808
+Total (centered) SS     =  13.07461676                Centered R2   =   0.1279
+Total (uncentered) SS   =  13.07461676                Uncentered R2 =   0.1279
+Residual SS             =  11.40291786                Root MSE      =    .6622
+
+-----------------------------------------------------------------------------------
+                  |               Robust
+l_wbill_imm_natL1 | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+------------------+----------------------------------------------------------------
+l_emp_imm_eff_nat |  -1.017743   1.800455    -0.57   0.581    -4.879334    2.843848
+-----------------------------------------------------------------------------------
+Underidentification test (Kleibergen-Paap rk LM statistic):              2.106
+                                                   Chi-sq(1) P-val =    0.1467
+------------------------------------------------------------------------------
+Weak identification test (Cragg-Donald Wald F statistic):                2.761
+                         (Kleibergen-Paap rk Wald F statistic):         13.642
+Stock-Yogo weak ID test critical values: 10% maximal IV size             16.38
+                                         15% maximal IV size              8.96
+                                         20% maximal IV size              6.66
+                                         25% maximal IV size              5.53
+Source: Stock-Yogo (2005).  Reproduced by permission.
+NB: Critical values are for Cragg-Donald F statistic and i.i.d. errors.
+------------------------------------------------------------------------------
+Hansen J statistic (overidentification test of all instruments):         0.000
+                                                 (equation exactly identified)
+------------------------------------------------------------------------------
+Instrumented:         l_emp_imm_eff_nat
+Excluded instruments: iv_r_shift_sharew_o_f
+Partialled-out:       _cons
+                      nb: total SS, model F and R2s are after partialling-out;
+                          any small-sample adjustments include partialled-out
+                          variables in regressor count K
+------------------------------------------------------------------------------
+
+Absorbed degrees of freedom:
+-----------------------------------------------------+
+ Absorbed FE | Categories  - Redundant  = Num. Coefs |
+-------------+---------------------------------------|
+       betnr |        23          23           0    *|
+       rt_fe |        26           1          25     |
+       kt_fe |        19          11           8     |
+-----------------------------------------------------+
+* = FE nested within cluster; treated as redundant for DoF computation
+
+. estimates store IV_bsl_L1
+
+. ivreghdfe   l_wbill_imm_natL2 ( l_emp_imm_eff_nat = iv_r_shift_sharew_o_f ) if sample_epsilon==1,  absorb(betnr rt_fe kt_fe) cluster(ind_labormkt)
+(dropped 59 singleton observations)
+(MWFE estimator converged in 14 iterations)
+
+IV (2SLS) estimation
+--------------------
+
+Estimates efficient for homoskedasticity only
+Statistics robust to heteroskedasticity and clustering on ind_labormkt
+
+Number of clusters (ind_labormkt) =     18            Number of obs =       75
+                                                      F(  1,    17) =     0.09
+                                                      Prob > F      =   0.7619
+Total (centered) SS     =  12.12274045                Centered R2   =  -0.1021
+Total (uncentered) SS   =  12.12274045                Uncentered R2 =  -0.1021
+Residual SS             =  13.36041984                Root MSE      =    .6908
+
+-----------------------------------------------------------------------------------
+                  |               Robust
+l_wbill_imm_natL2 | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+------------------+----------------------------------------------------------------
+l_emp_imm_eff_nat |   .5776843   1.876237     0.31   0.762    -3.380829    4.536198
+-----------------------------------------------------------------------------------
+Underidentification test (Kleibergen-Paap rk LM statistic):              1.653
+                                                   Chi-sq(1) P-val =    0.1985
+------------------------------------------------------------------------------
+Weak identification test (Cragg-Donald Wald F statistic):                1.203
+                         (Kleibergen-Paap rk Wald F statistic):          5.663
+Stock-Yogo weak ID test critical values: 10% maximal IV size             16.38
+                                         15% maximal IV size              8.96
+                                         20% maximal IV size              6.66
+                                         25% maximal IV size              5.53
+Source: Stock-Yogo (2005).  Reproduced by permission.
+NB: Critical values are for Cragg-Donald F statistic and i.i.d. errors.
+------------------------------------------------------------------------------
+Hansen J statistic (overidentification test of all instruments):         0.000
+                                                 (equation exactly identified)
+------------------------------------------------------------------------------
+Instrumented:         l_emp_imm_eff_nat
+Excluded instruments: iv_r_shift_sharew_o_f
+Partialled-out:       _cons
+                      nb: total SS, model F and R2s are after partialling-out;
+                          any small-sample adjustments include partialled-out
+                          variables in regressor count K
+------------------------------------------------------------------------------
+
+Absorbed degrees of freedom:
+-----------------------------------------------------+
+ Absorbed FE | Categories  - Redundant  = Num. Coefs |
+-------------+---------------------------------------|
+       betnr |        26          26           0    *|
+       rt_fe |        32           1          31     |
+       kt_fe |        25          10          15     |
+-----------------------------------------------------+
+* = FE nested within cluster; treated as redundant for DoF computation
+
+. estimates store IV_bsl_L2
+
+. ivreghdfe   l_wbill_imm_natL3 ( l_emp_imm_eff_nat = iv_r_shift_sharew_o_f ) if sample_epsilon==1,  absorb(betnr rt_fe kt_fe) cluster(ind_labormkt)
+(dropped 50 singleton observations)
+(MWFE estimator converged in 14 iterations)
+
+IV (2SLS) estimation
+--------------------
+
+Estimates efficient for homoskedasticity only
+Statistics robust to heteroskedasticity and clustering on ind_labormkt
+
+Number of clusters (ind_labormkt) =     20            Number of obs =       88
+                                                      F(  1,    19) =     0.17
+                                                      Prob > F      =   0.6884
+Total (centered) SS     =  14.84813437                Centered R2   = -11.8778
+Total (uncentered) SS   =  14.84813437                Uncentered R2 = -11.8778
+Residual SS             =  191.2105996                Root MSE      =    2.273
+
+-----------------------------------------------------------------------------------
+                  |               Robust
+l_wbill_imm_natL3 | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+------------------+----------------------------------------------------------------
+l_emp_imm_eff_nat |   5.023311   12.33634     0.41   0.688    -20.79694    30.84357
+-----------------------------------------------------------------------------------
+Underidentification test (Kleibergen-Paap rk LM statistic):              0.292
+                                                   Chi-sq(1) P-val =    0.5888
+------------------------------------------------------------------------------
+Weak identification test (Cragg-Donald Wald F statistic):                0.725
+                         (Kleibergen-Paap rk Wald F statistic):          0.178
+Stock-Yogo weak ID test critical values: 10% maximal IV size             16.38
+                                         15% maximal IV size              8.96
+                                         20% maximal IV size              6.66
+                                         25% maximal IV size              5.53
+Source: Stock-Yogo (2005).  Reproduced by permission.
+NB: Critical values are for Cragg-Donald F statistic and i.i.d. errors.
+------------------------------------------------------------------------------
+Hansen J statistic (overidentification test of all instruments):         0.000
+                                                 (equation exactly identified)
+------------------------------------------------------------------------------
+Instrumented:         l_emp_imm_eff_nat
+Excluded instruments: iv_r_shift_sharew_o_f
+Partialled-out:       _cons
+                      nb: total SS, model F and R2s are after partialling-out;
+                          any small-sample adjustments include partialled-out
+                          variables in regressor count K
+------------------------------------------------------------------------------
+
+Absorbed degrees of freedom:
+-----------------------------------------------------+
+ Absorbed FE | Categories  - Redundant  = Num. Coefs |
+-------------+---------------------------------------|
+       betnr |        31          31           0    *|
+       rt_fe |        37           1          36     |
+       kt_fe |        24          10          14     |
+-----------------------------------------------------+
+* = FE nested within cluster; treated as redundant for DoF computation
+
+. estimates store IV_bsl_L3
+
+. ivreghdfe   l_wbill_imm_natL4 ( l_emp_imm_eff_nat = iv_r_shift_sharew_o_f ) if sample_epsilon==1,  absorb(betnr rt_fe kt_fe) cluster(ind_labormkt)
+(dropped 60 singleton observations)
+(MWFE estimator converged in 11 iterations)
+
+IV (2SLS) estimation
+--------------------
+
+Estimates efficient for homoskedasticity only
+Statistics robust to heteroskedasticity and clustering on ind_labormkt
+
+Number of clusters (ind_labormkt) =     15            Number of obs =       69
+                                                      F(  1,    14) =     0.00
+                                                      Prob > F      =   0.9517
+Total (centered) SS     =  12.45901902                Centered R2   =  -0.0035
+Total (uncentered) SS   =  12.45901902                Uncentered R2 =  -0.0035
+Residual SS             =  12.50235325                Root MSE      =    .6682
+
+-----------------------------------------------------------------------------------
+                  |               Robust
+l_wbill_imm_natL4 | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+------------------+----------------------------------------------------------------
+l_emp_imm_eff_nat |   .1732397   2.811694     0.06   0.952    -5.857244    6.203724
+-----------------------------------------------------------------------------------
+Underidentification test (Kleibergen-Paap rk LM statistic):              1.816
+                                                   Chi-sq(1) P-val =    0.1778
+------------------------------------------------------------------------------
+Weak identification test (Cragg-Donald Wald F statistic):                1.832
+                         (Kleibergen-Paap rk Wald F statistic):          7.591
+Stock-Yogo weak ID test critical values: 10% maximal IV size             16.38
+                                         15% maximal IV size              8.96
+                                         20% maximal IV size              6.66
+                                         25% maximal IV size              5.53
+Source: Stock-Yogo (2005).  Reproduced by permission.
+NB: Critical values are for Cragg-Donald F statistic and i.i.d. errors.
+------------------------------------------------------------------------------
+Hansen J statistic (overidentification test of all instruments):         0.000
+                                                 (equation exactly identified)
+------------------------------------------------------------------------------
+Instrumented:         l_emp_imm_eff_nat
+Excluded instruments: iv_r_shift_sharew_o_f
+Partialled-out:       _cons
+                      nb: total SS, model F and R2s are after partialling-out;
+                          any small-sample adjustments include partialled-out
+                          variables in regressor count K
+------------------------------------------------------------------------------
+
+Absorbed degrees of freedom:
+-----------------------------------------------------+
+ Absorbed FE | Categories  - Redundant  = Num. Coefs |
+-------------+---------------------------------------|
+       betnr |        23          23           0    *|
+       rt_fe |        30           1          29     |
+       kt_fe |        21          10          11     |
+-----------------------------------------------------+
+* = FE nested within cluster; treated as redundant for DoF computation
+
+. estimates store IV_bsl_L4
+
+. ivreghdfe   l_wbill_imm_natL5 ( l_emp_imm_eff_nat = iv_r_shift_sharew_o_f ) if sample_epsilon==1,  absorb(betnr rt_fe kt_fe) cluster(ind_labormkt)
+(dropped 52 singleton observations)
+(MWFE estimator converged in 14 iterations)
+
+IV (2SLS) estimation
+--------------------
+
+Estimates efficient for homoskedasticity only
+Statistics robust to heteroskedasticity and clustering on ind_labormkt
+
+Number of clusters (ind_labormkt) =     23            Number of obs =       83
+                                                      F(  1,    22) =     0.02
+                                                      Prob > F      =   0.8852
+Total (centered) SS     =  16.99983302                Centered R2   =   0.0084
+Total (uncentered) SS   =  16.99983302                Uncentered R2 =   0.0084
+Residual SS             =   16.8565392                Root MSE      =    .7374
+
+-----------------------------------------------------------------------------------
+                  |               Robust
+l_wbill_imm_natL5 | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+------------------+----------------------------------------------------------------
+l_emp_imm_eff_nat |  -.3240534   2.218351    -0.15   0.885    -4.924632    4.276525
+-----------------------------------------------------------------------------------
+Underidentification test (Kleibergen-Paap rk LM statistic):              1.300
+                                                   Chi-sq(1) P-val =    0.2543
+------------------------------------------------------------------------------
+Weak identification test (Cragg-Donald Wald F statistic):                0.484
+                         (Kleibergen-Paap rk Wald F statistic):          0.611
+Stock-Yogo weak ID test critical values: 10% maximal IV size             16.38
+                                         15% maximal IV size              8.96
+                                         20% maximal IV size              6.66
+                                         25% maximal IV size              5.53
+Source: Stock-Yogo (2005).  Reproduced by permission.
+NB: Critical values are for Cragg-Donald F statistic and i.i.d. errors.
+------------------------------------------------------------------------------
+Hansen J statistic (overidentification test of all instruments):         0.000
+                                                 (equation exactly identified)
+------------------------------------------------------------------------------
+Instrumented:         l_emp_imm_eff_nat
+Excluded instruments: iv_r_shift_sharew_o_f
+Partialled-out:       _cons
+                      nb: total SS, model F and R2s are after partialling-out;
+                          any small-sample adjustments include partialled-out
+                          variables in regressor count K
+------------------------------------------------------------------------------
+
+Absorbed degrees of freedom:
+-----------------------------------------------------+
+ Absorbed FE | Categories  - Redundant  = Num. Coefs |
+-------------+---------------------------------------|
+       betnr |        33          33           0    *|
+       rt_fe |        35           1          34     |
+       kt_fe |        25           8          17     |
+-----------------------------------------------------+
+* = FE nested within cluster; treated as redundant for DoF computation
+
+. estimates store IV_bsl_L5
+
+. 
+. estout IV_bsl_L*, varlabels(_cons \_cons)  cells(b(star) se ) starlevels( * 0.10 ** 0.05 *** 0.010) stats(N N_clust)
+
+------------------------------------------------------------------------------------------------------------
+                IV_bsl_L0       IV_bsl_L1       IV_bsl_L2       IV_bsl_L3       IV_bsl_L4       IV_bsl_L5   
+                     b/se            b/se            b/se            b/se            b/se            b/se   
+------------------------------------------------------------------------------------------------------------
+l_emp_~f_nat    -1.589639       -1.017743        .5776843        5.023311        .1732397       -.3240534   
+                 3.577211        1.800455        1.876237        12.33634        2.811694        2.218351   
+------------------------------------------------------------------------------------------------------------
+N                     185              60              75              88              69              83   
+N_clust                52              15              18              20              15              23   
+------------------------------------------------------------------------------------------------------------
+
+. eststo clear    
+
+. 
+. 
+. *-------------------------------------------------------------------------------
+. * Bootstrap  of 5000 repetitions for standard errors - supressing log to avoid excessive output
+. *-------------------------------------------------------------------------------
+. 
+. log off
+      name:  <unnamed>
+       log:  /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/log/11_epsilon_pre_trend_test.log
+  log type:  text
+ paused on:   9 Sep 2026, 15:24:47
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/log/11_epsilon_pre_trend_test.log
+  log type:  text
+resumed on:   9 Sep 2026, 15:45:22
+
+. 
+.  *95% CI for reduced form coefficient 
+.  
+.  _pctile epsilon_RF1 , nq(1000)
+
+.  gen epsilon_RF1_25 = r(r25)
+
+.   _pctile epsilon_RF1 , nq(1000)
+
+.  gen epsilon_RF1_975 = r(r975)
+
+.   
+.   
+.  _pctile epsilon_RF2 , nq(1000)
+
+.  gen epsilon_RF2_25 = r(r25)
+
+.   _pctile epsilon_RF2 , nq(1000)
+
+.  gen epsilon_RF2_975 = r(r975)
+
+.   
+.    _pctile epsilon_RF3 , nq(1000)
+
+.  gen epsilon_RF3_25 = r(r25)
+
+.   _pctile epsilon_RF3 , nq(1000)
+
+.  gen epsilon_RF3_975 = r(r975)
+
+.   
+.    _pctile epsilon_RF4 , nq(1000)
+
+.  gen epsilon_RF4_25 = r(r25)
+
+.   _pctile epsilon_RF4 , nq(1000)
+
+.  gen epsilon_RF4_975 = r(r975)
+
+.   
+. 
+.  _pctile epsilon_RF5 , nq(1000)
+
+.  gen epsilon_RF5_25 = r(r25)
+
+.   _pctile epsilon_RF5 , nq(1000)
+
+.  gen epsilon_RF5_975 = r(r975)
+
+. 
+.  * Print results 
+.  
+. 
+. ****************************
+. * Table 1 (supplement)
+. * Table C3: 99% bootstrap CIs for pre-trend coefficients
+. ****************************
+. 
+. * Variables: epsilon_RF1_25 / epsilon_RF1_975 through epsilon_RF5_25 / epsilon_RF5_975
+. *   (2.5st and 97.5th percentiles of the lag-1 through lag-5 coefficient distribution
+. *   across 5,000 firm-clustered bootstrap draws)
+. * N (bootstrap draws): 5,000
+. 
+.  
+.   tabstat epsilon_RF1_25 epsilon_RF1_975 epsilon_RF2_25 epsilon_RF2_975 epsilon_RF3_25 epsilon_RF3_975 epsilon_RF4_25 epsilon_RF4_975 epsilon_RF5_25 epsilon_RF5_975, c(stat) s(mean n)
+
+    Variable |      Mean         N
+-------------+--------------------
+epsilon~1_25 | -3.053279      4966
+epsilo~1_975 |  7.900398      4966
+epsilon~2_25 | -8.906515      4966
+epsilo~2_975 |  13.21463      4966
+epsilon~3_25 | -8.158029      4966
+epsilo~3_975 |   8.47958      4966
+epsilon~4_25 | -6.729167      4966
+epsilo~4_975 |  12.19468      4966
+epsilon~5_25 | -12.47607      4966
+epsilo~5_975 |  12.30575      4966
+----------------------------------
+
+. 
+. 
+. 
+. 
+.  * Save 
+. 
+. save "${data}/epsilon_pretrend_bootstrapsample.dta",replace
+(file /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/data/epsilon_pretrend_bootstrapsample.dta not found)
+file /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/data/epsilon_pretrend_bootstrapsample.dta saved
+
+. 
+. 
+. * Clean 
+. 
+. forvalues y=1/`ntot'{
+  2.         cap erase "${data}/coeff`y'.dta"
+  3. }
+
+. 
+.   
+. log close 
+      name:  <unnamed>
+       log:  /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/log/11_epsilon_pre_trend_test.log
+  log type:  text
+ closed on:   9 Sep 2026, 15:45:23
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

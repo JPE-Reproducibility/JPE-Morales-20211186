@@ -94,37 +94,56 @@ In assessing compliance with our [Data and Code Availability Policy](https://www
 -   [ ] No requirements specified
 
 -   [x] Software Requirements specified as follows:
-    -   3.1 STATA
-        - Stata 16 or later. (liab_analysis/prog/master.do declares `version 16`.)
-        - User-written packages (install once from SSC):
+    
+    3.1 STATA
 
-                ssc install reghdfe        // high-dimensional fixed-effects regression
-                ssc install ivreghdfe      // IV/2SLS version of reghdfe
-                ssc install ftools         // dependency of reghdfe/ivreghdfe
-                ssc install require        // package/version dependency checker  
-                ssc install estout         // eststo / esttab / estout table export
-                ssc install grstyle        // graph styling (model_analysis plots only)
-                ssc install grc1leg2       // graph styling (model_analysis plots only)
+      - Stata 16 or later. (liab_analysis/prog/master.do declares `version 16`.)
+      - User-written packages (install once from SSC):
 
-
-            ivreghdfe additionally relies on ivreg2 and ranktest; if `ssc install
-            ivreghdfe` does not pull them in, install them as well:
-                ssc install ivreg2
-                ssc install ranktest
-
-            The do-files in calibration_external/ use base Stata only (import Excel,
-            merge, collapse) and require none of the above.
+        ssc install reghdfe        // high-dimensional fixed-effects regression
+        ssc install ivreghdfe      // IV/2SLS version of reghdfe
+        ssc install ftools         // dependency of reghdfe/ivreghdfe
+        ssc install require        // package/version dependency checker  
+        ssc install estout         // eststo / esttab / estout table export
+        ssc install grstyle        // graph styling (model_analysis plots only)
+        ssc install grc1leg2       // graph styling (model_analysis plots only)
 
 
-        Also, make sure to add the ado files bartik_weight.ado, btsls.ado, and ch_weak.ado, which are not available via ssc install.
-        The codes can be downloaded directly at https://github.com/paulgp/bartik-weight/tree/master/code
+        ivreghdfe additionally relies on ivreg2 and ranktest; if `ssc install
+        ivreghdfe` does not pull them in, install them as well:
+            ssc install ivreg2
+            ssc install ranktest
+
+        The do-files in calibration_external/ use base Stata only (import Excel,
+        merge, collapse) and require none of the above.
 
 
-        3.2 MATLAB
-        - MATLAB (R2019b or later recommended) with the Optimization Toolbox.
-            The model solution and calibration use fsolve and fminsearch; the
-            nu-estimation helper files in liab_analysis/prog use fsolve and gamma().
-        - No additional MATLAB toolboxes are required.
+    Also, make sure to add the ado files bartik_weight.ado, btsls.ado, and ch_weak.ado, which are not available via ssc install.
+    The codes can be downloaded directly at https://github.com/paulgp/bartik-weight/tree/master/code
+
+        WHERE TO PUT THESE FILES: place the three downloaded .ado files directly in
+        liab_analysis/prog/ (the folder that contains the do-files that call them).
+        Every liab_analysis do-file that needs them already runs
+        `capture adopath++ ${prog}` at the top, which adds liab_analysis/prog/ to
+        Stata's ado search path, so no further configuration is needed once the
+        files are copied there. Alternatively, they can be placed in your personal
+        Stata ado directory (run `sysdir` in Stata and use the PERSONAL or PLUS
+        path shown), which works regardless of the working directory.
+
+
+    3.2 MATLAB
+
+        - MATLAB (R2019b or later recommended) with the Optimization Toolbox AND the
+        Statistics and Machine Learning Toolbox.
+        The model solution and calibration use fsolve and fminsearch (Optimization
+        Toolbox); the nu-estimation helper files in liab_analysis/prog use fsolve
+        and gamma(). The heterogeneous-firm model draws (Heterogeneity.m, called
+        from Counterfactual_heterogeneous_open.m / Counterfactual_heterogeneous_closed.m)
+        use mvnrnd, which requires the Statistics and Machine Learning Toolbox.
+        - If MATLAB is on the system PATH, the entire package (MATLAB + Stata) can be
+        run end to end from master_file.do alone (see master_file.do, Part 5); the
+        do-file invokes MATLAB via `shell matlab -batch ...`.
+
 
 -   [x] Computational Requirements specified as follows:
 
@@ -143,18 +162,13 @@ In assessing compliance with our [Data and Code Availability Policy](https://www
 
 -   [x] Time Requirements specified as follows:
 
-    -   3.3 RUN TIME AND REPRODUCIBILITY
-        - Run time is data-dependent. The empirical part of the model takes close to 5 hours to run on the full data.
-            On the genuine FDZ data, the bootstrap-based
-            do-files (5,000 firm-clustered draws) and the model calibration (SMM via
-            fminsearch) are the slow steps.
-        - Seeds are set (set seed 1234 in Stata; explicit bootstrap seeds were used).
-        - With the shipped TEST data the code runs to completion but outputs WILL NOT
-            match the paper.
+    - Run time is data-dependent. The empirical part of the model takes close to 5 hours to run on the full data. On the genuine FDZ data, the bootstrap-based do-files (5,000 firm-clustered draws) and the model calibration (SMM via fminsearch) are the slow steps.
+    - With the shipped TEST data, the full package (Stata + MATLAB) takes approximately 1 hour to run end to end (Stata analysis: ~48 minutes; MATLAB model: ~8 minutes; timed on a MacBook Air 2020, M1 chip, 8 GB RAM).
+    - Seeds are set (set seed 1234 in Stata; explicit bootstrap seeds were used).
+    - With the shipped TEST data the code runs to completion but outputs WILL NOT match the paper.
 
--   [ ] Requirements are complete.
+-   [x] Requirements are complete.
 
-For missing requirements, see the list of required changes in @sec-findings
 
 # Analyzing Data and Code Files
 
@@ -223,72 +237,20 @@ The below table presents programs which produce figures or tables.
 
 # Replication
 
-Overall the script runs smoothly with 1 issue. 
-
-When running the file, an error appeared related to permissions:
-
-```
-. log using "${log}/master.log", replace
-(file
-    /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replic
-    > ation_Package/liab_analysis/log/master.log not found)
-file
-    /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replic
-    > ation_Package/liab_analysis/log/master.log could not be opened
-r(603);
-```
-
-Solution:
-
-```
-I ran a background command (chmod -R u+w) on the entire Brinatti_Morales_Replication_Package folder to grant write permissions for all files inside it.
-```
-
-After fixing, another error appeared:
-
-```
-mvnrnd requires Statistics and Machine Learning Toolbox.
-Error in Heterogeneity (line 56)
-normal_draw    = exp(mvnrnd(mu,    var,    N_g));
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error in Counterfactual_heterogeneous_open (line 14)
-SS      = Heterogeneity(PP);
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error in run (line 100)
-evalin('caller', strcat(scriptStem, ';'));
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error in master>run_isolated (line 100)
-    run(script_name);
-    ^^^^^^^^^^^^^^^^^
-Error in master (line 33)
-run_isolated('Counterfactual_heterogeneous_open.m');
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error in run (line 100)
-evalin('caller', strcat(scriptStem, ';'));
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-}
-```
-
-After installing Machine Learning Toolbox in Matlab, the code ran to completion.
-
+The script runs smoothly. 
+The code ran to completion.
 
 # Findings {#sec-findings}
 
-## Missing Requirements
-
-The provided test data took approximately 1 hour to run on the replicator's machine (Stata analysis: ~48 minutes, MATLAB model: ~8 minutes). Please add this information to the README.
-
-> \[REQUIRED\] Please amend README to contain complete requirements.
-
 ## Data Preparation Code
 
-The master file `master_file.do` ran without issues after installing the Statistics and Machine Learning Toolbox in Matlab.
+The master file `master_file.do` ran without issues.
 
 ## Tables and Figures
 
 | Exhibit | Folder | Program | Reproduced? | Comment |
 |---|---|---|---|---|
-| Table 1 | liab_analysis | 19_moments_calculation.do | yes | rounding discrepancy on the $\sigma_{\psi, f, NT}$ which equals 30.82 in the paper and 30.83 in the reproduced file. |
+| Table 1 | liab_analysis | 19_moments_calculation.do | no | **discrepancy on the $\sigma_{\psi, f, NT}$ which equals 30.82 in the paper and 30.83 in the reproduced file.** |
 | Table 2 | model_analysis | code/model/Export_latex_tables.m | yes | - |
 | Tables A1, A2 | liab_analysis | 17_empirical_facts.do | yes | differences appear because of confidentiality of the data |
 | Tables A3–A5 | sieed_analysis | 2a_results_event_studies.do | yes | differences appear because of confidentiality of the data |
@@ -298,24 +260,31 @@ The master file `master_file.do` ran without issues after installing the Statist
 | Table C3 | liab_analysis | 11_epsilon_pre_trend_test.do | yes | differences appear because of confidentiality of the data |
 | Table C5 | liab_analysis | 12_epsilon_firm_characteristics.do | yes | differences appear because of confidentiality of the data |
 | Table C6 | liab_analysis | 16_estimate_nu.do (+ MATLAB nu files) | yes | differences appear because of confidentiality of the data |
-| Table C7 | liab_analysis / model_analysis | 19_moments_calculation.do / Export_latex_tables.m | yes | rounding discrepancies (paper vs reproduced file). $Var((1-s_j)/s_j)$, T: simulated 1.31 vs 1.32 $Var((1-s_j)/s_j)$, NT: simulated 1.43 vs 1.42 data 1.58 vs 1.59. $E(1-s_{j,p90})-E(1-s_{j,p50})$, T: simulated 0.027 vs 0.026. Share of firms hiring immigrants, T: simulated 0.62 vs 0.61.|
+| Table C7 | liab_analysis / model_analysis | 19_moments_calculation.do / Export_latex_tables.m | no | **discrepancies (paper vs reproduced file). $Var((1-s_j)/s_j)$, T: simulated 1.31 vs 1.32 $Var((1-s_j)/s_j)$, NT: simulated 1.43 vs 1.42 data 1.58 vs 1.59. $E(1-s_{j,p90})-E(1-s_{j,p50})$, T: simulated 0.027 vs 0.026. Share of firms hiring immigrants, T: simulated 0.62 vs 0.61.**|
 | Tables C8–C13 | liab_analysis | 8_validation_regressions.do | yes | differences appear because of confidentiality of the data |
 | Tables D1–D3 | model_analysis | code/model/Export_latex_tables.m | yes | - |
 | Kappa (Appendix C.1) | liab_analysis | 9_kappa_estimation.do | yes | differences appear because of confidentiality of the data |
-| Figure 1 | liab_analysis | 17_empirical_facts.do | no | No image files produced by code; only underlying data tables. |
-| Figure 2 | sieed_analysis | 2a_results_event_studies.do | no | No image files produced by code; only underlying data tables. |
-| Figure 3 | liab_analysis / model_analysis | 8_validation_regressions.do / master.do (Validation_cross_CI_heterog.do) | yes | differences appear because of confidentiality of the data |
-| Figure 4 | model_analysis | master.do (Counterfactual_plots_heterog.do) | yes | -|
-| Figures A1–A4, A6 | liab_analysis | 17_empirical_facts.do | no | No image files produced by code; only underlying data tables. |
-| Figure A5 | sieed_analysis | 2c_results_figA5.do | no | No image files produced by code; only underlying data tables. |
-| Figure A7 | sieed_analysis | 2b_results_figA7.do | no | No image files produced by code; only underlying data tables. |
-| Figure A8 | sieed_analysis | 2a_results_event_studies.do | no | No image files produced by code; only underlying data tables. |
-| Figure A9 | liab_analysis | 18_immigrant_comparative_advantage.do | no | No image files produced by code; only underlying data tables. |
+| Figure 1 | liab_analysis | 17_empirical_facts.do | yes | discrepancies in appearance and in content compared to the paper |
+| Figure 2 | sieed_analysis | 2a_results_event_studies.do | yes | discrepancies in appearance and in content compared to the paper |
+| Figure 3 | liab_analysis / model_analysis | 8_validation_regressions.do / master.do (Validation_cross_CI_heterog.do) | yes | reproduced |
+| Figure 4 | model_analysis | master.do (Counterfactual_plots_heterog.do) | yes | reproduced |
+| Figure A1 | liab_analysis | 17_empirical_facts.do | yes | different legend labels in panels (a) and (d) |
+| Figure A2 | liab_analysis | 17_empirical_facts.do | yes | different title in panel (b); different label for the first line (Baseline vs. All establishments) |
+| Figure A3 | liab_analysis | 17_empirical_facts.do | yes | different axis labels |
+| Figure A4 | liab_analysis | 17_empirical_facts.do | yes | different title and different labelling |
+| Figure A5 | sieed_analysis | 2c_results_figA5.do | yes | different axis labelling |
+| Figure A6 | liab_analysis | 17_empirical_facts.do | yes | different axis label and title |
+| Figure A7 | sieed_analysis | 2b_results_figA7.do | yes | different title and axis labels; note: Figure A8 appears before Figure A7 in the paper |
+| Figure A8 | sieed_analysis | 2a_results_event_studies.do | yes | different title and axis labels; note: Figure A8 appears before Figure A7 in the paper |
+| Figure A9 | liab_analysis | 18_immigrant_comparative_advantage.do | yes | no dotted line at zero on the y-axis; different axis labels and different title |
 | Figure C1 | liab_analysis | 14_epsilon_sigma_histogram.do | yes | differences appear because of confidentiality of the data |
 | Figures D1, D2 | model_analysis | master.do (Counterfactual_plots_policies.do) | yes | - |
 | Calibration moment GDP_RoW_Ger (~0.32) | calibration_external | gdp_per_worker_*.do | yes | differences appear because of confidentiality of the data |
 | Calibration moment tradeable share (~0.68) | calibration_external | tradeable_consumption_share.do | yes | differences appear because of confidentiality of the data |
 
+**While the difference in appearance and content is expected, different labelling should be corrected.**
+
+**Note on figure extraction:** `17_empirical_facts.do` produces Figures 1, A1(a)–(d), A2(a)–(b), A3, A4(a)–(b), and A6(a)–(b) (12 panels total); Figure A3 is rendered as a bar chart, matching the paper, while all others are connected-line plots with 95% CI whiskers. For `2a_results_event_studies.do` (Figures 2, A8), `2b_results_figA7.do` (Figure A7), and `2c_results_figA5.do` (Figure A5), the underlying coefficients/estimates were previously only printed via `esttab`/`lincom`/`table` and not saved to produce a figure; we amended the do-files to capture these values into datasets (via `estimates restore` on the models already stored by the existing `eststo` calls for Figures 2/A8, with no re-estimation, and by stashing the `table` output to small datasets and merging for Figures A5/A7) so that the figures could be produced.
 
 ## In-Text Numbers
 
@@ -353,16 +322,6 @@ the aggregate economy."
 "The remaining 61% of the total dampening effects (0.006 pp) is due to the heterogeneity
 in immigrant shares across firms within sectors, as illustrated in equation 16."
 
-## Other Issues
-
-- In Instructions to Replicators, please add the info that if Matlab is added to PATH, everything can be replicated using master_file.do
-- There’s no info on where the .ado files should be located
-- The package should be unzipped directly to `replication-package` folder
-- There is no paper in the paper-appendices folder, please relocate
-- Please provide the file in open format:  `model_analysis/data/inputs/Validation_data.xlsx`
-- There’s an unnecessary tabulate in readme in table line 459 (look at the screenshot)
-
-![](images/Morales-table-sc.png)
 
 
 # Classification
@@ -375,8 +334,8 @@ in immigrant shares across firms within sectors, as illustrated in equation 16."
 ## Reason for incomplete reproducibility
 
 -   [ ] None.
--   [ ] `Discrepancy in output` (either figures or numbers in tables or text differ)
--   [x] `Bugs in code` that were fixable by the replicator (but should be fixed in the final deposit)
+-   [x] `Discrepancy in output` (either figures or numbers in tables or text differ)
+-   [ ] `Bugs in code` that were fixable by the replicator (but should be fixed in the final deposit)
 -   [ ] `Code missing`, in particular if it prevented the replicator from completing the reproducibility check
     -   [ ] `Data preparation code missing` should be checked if the code missing seems to be data preparation code
 -   [ ] `Code not functional` is more severe than a simple bug: it prevented the replicator from completing the reproducibility check

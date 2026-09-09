@@ -1,0 +1,886 @@
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/log/8_validation_regressions.log
+  log type:  text
+ opened on:   9 Sep 2026, 15:16:08
+
+. 
+. * Validation regressions: revenues and immigrant-to-native wage bill ratio
+. * Agostina Brinatti & Nicolas Morales
+. * Source data: LIAB Longitudinal Model (version 1993-2014), IAB
+. 
+. /*      This dofile estimates equation (20): the reduced-form regression of firm
+>         outcomes on the immigrant share of the local labour market, instrumented
+>         by a shift-share instrument (Card 2001; Ottaviano et al. 2018).
+> 
+>         y_jt = theta_1 Im_mt + theta_2 Im_mt x log(emp_j,2003) + controls + FE + u
+> 
+>         Output tables in this dofile:
+>           Table 1  - Table C8:  OLS estimates (revenues and wage-bill ratio)
+>           Table 2  - Table C9:  2SLS estimates (revenues and wage-bill ratio)
+>           Table 3  - Table C10: First-stage regressions
+>           Table 4  - Table C11: Pre-trend tests, lags 1-5
+>           Table 5  - Table C12: Robustness to alternative FE specifications
+>           Table 6  - Table C13 / Figure 3: Mean elasticity by size decile
+> 
+>         FDZ note: N (unweighted) reported via stats(N N_clust) in all estout calls.
+>           For Table 6 (Figure 3), unweighted counts precede weighted means (§4.5).
+> */
+. 
+. 
+. /*
+> Input datasets:
+> (ii)"${data}/establishment_full_dataset_reg_rep_oct24.dta": firm-year level with data that includes constructed variables needed for regression analysis
+> 
+> This dofile run the baseline regressions, the pre-trend analysis, and compute the elasticities of the main variables across the size distribution that will be used in the validation analysis
+> 
+> */
+. 
+. 
+. clear
+
+. 
+. set more off
+
+. set matsize 10000
+set matsize ignored.
+    Matrix sizes are no longer limited by c(matsize) in modern Statas.  Matrix sizes are now limited by edition of Stata.  See limits for more details.
+
+. set linesize 255
+
+. set seed 1234
+
+. 
+. capture adopath++ ${prog}
+
+. 
+. 
+. use "${data}/establishment_level_regressions_liab.dta", clear
+
+. 
+. * Lag variables for pre-trend check 
+. 
+. tsset betnr jahr
+
+Panel variable: betnr (unbalanced)
+ Time variable: jahr, 2003 to 2011, but with gaps
+         Delta: 1 unit
+
+. foreach var in "logrevenues" "wb_mig_ger" {
+  2. 
+.         gen `var'L0 = `var'
+  3.         gen `var'L1 = L1.`var'
+  4.         gen `var'L2 = L2.`var'
+  5.         gen `var'L3 = L3.`var'
+  6.         gen `var'L4 = L4.`var'  
+  7.         gen `var'L5 = L5.`var'
+  8. 
+. }
+(6,064 missing values generated)
+(8,380 missing values generated)
+(9,753 missing values generated)
+(10,828 missing values generated)
+(11,718 missing values generated)
+(12,501 missing values generated)
+(3,854 missing values generated)
+(6,305 missing values generated)
+(8,145 missing values generated)
+(9,684 missing values generated)
+(10,994 missing values generated)
+
+. 
+. 
+. 
+. 
+. merge 1:1 betnr jahr using "${data}/dataset_instrument_validation.dta" , keepusing(instrument3n_local)
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                         4,733
+        from master                     4,405  (_merge==1)
+        from using                        328  (_merge==2)
+
+    Matched                            10,833  (_merge==3)
+    -----------------------------------------
+
+. drop _merge 
+
+. 
+. rename instrument3n_local instrument3n_new
+
+. 
+. * Variables in the regressions 
+. 
+. global regressors share_mig_local2_t interaction
+
+. global instruments instrument3n_new c.instrument3n_new#c.logemp_tot_firm03
+
+. global controls c.logemp_tot_firm03#c.jahr
+
+. global fixedeffects ind_med_time betnr i.local_labor11#c.jahr  c.cost_sales_03#i.jahr 
+
+. global clustering ind_2dig local_labor11 
+
+. 
+. 
+. 
+. 
+. 
+. 
+. *-------------------------------------------------------------------------------
+. * Main regressions and elasticities by firm size
+. *-------------------------------------------------------------------------------
+. 
+. * Sample
+. 
+. gen sample_rev=0
+
+. quietly ivreghdfe logrevenues ( $regressors = $instruments ) $controls if jahr>=2008 & jahr<=2011 & min_emp>=10 & count_missrev>=2 & turnover_type==1, cl($clustering) absorb($fixedeffects) 
+
+. replace sample_rev =1 if e(sample)==1
+(263 real changes made)
+
+.                 
+. keep if sample_rev==1 
+(15,303 observations deleted)
+
+. 
+. 
+. preserve
+
+. keep betnr jahr sample_rev
+
+. save "${data}/sample_validation.dta", replace
+(file /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/data/sample_validation.dta not found)
+file /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/data/sample_validation.dta saved
+
+. restore
+
+. 
+. 
+. 
+. 
+. * Sales, all firms 
+. 
+. quietly ivreghdfe logrevenues ( $regressors = $instruments ) $controls, cl($clustering) absorb($fixedeffects) 
+
+. eststo m1
+
+. local fstat_all=e(widstat)
+
+. gen   elast_lrev        = (_b[share_mig_local2_t]*share_mig_local2_t + _b[interaction]*interaction) 
+
+. 
+.  
+. * Sales, T sector  
+. 
+. quietly ivreghdfe logrevenues ( $regressors = $instruments ) $controls if tradeable3==1, cl($clustering) absorb($fixedeffects) 
+
+. eststo m2
+
+. local fstat_T=e(widstat)
+
+. gen   elast_lrev_T      = (_b[share_mig_local2_t]*share_mig_local2_t + _b[interaction]*interaction) if tradeable3==1
+(52 missing values generated)
+
+. 
+. 
+. * Sales, NT sector 
+. 
+. quietly ivreghdfe logrevenues ( $regressors = $instruments ) $controls if tradeable3==0, cl($clustering) absorb($fixedeffects) 
+
+. eststo m3
+
+. local fstat_NT=e(widstat)
+
+. gen   elast_lrev_NT = (_b[share_mig_local2_t]*share_mig_local2_t + _b[interaction]*interaction) if tradeable3==0
+(211 missing values generated)
+
+. 
+. 
+. * Ratio, all 
+.  
+. quietly ivreghdfe wb_mig_ger  ( $regressors = $instruments ) $controls, cl($clustering) absorb($fixedeffects)
+Warning: estimated covariance matrix of moment conditions not of full rank.
+         overidentification statistic not reported, and standard errors and
+         model tests should be interpreted with caution.
+Possible causes:
+         number of clusters insufficient to calculate robust covariance matrix
+         singleton dummy variable (dummy with one 1 and N-1 0s or vice versa)
+partial option may address problem.
+
+. eststo m4
+
+. gen   elast_ratio = (_b[share_mig_local2_t]*share_mig_local2_t + _b[interaction]*interaction) if tradeable3==0
+(211 missing values generated)
+
+. 
+.  
+. * Ratio, T
+. quietly ivreghdfe wb_mig_ger ( $regressors = $instruments ) $controls if tradeable3==1, cl($clustering) absorb($fixedeffects) 
+
+. eststo m5
+
+. gen   elast_ratio_T     = (_b[share_mig_local2_t]*share_mig_local2_t + _b[interaction]*interaction) if tradeable3==1
+(52 missing values generated)
+
+. 
+. * Ratio, NT 
+. 
+. quietly ivreghdfe wb_mig_ger ( $regressors = $instruments ) $controls if tradeable3==0, cl($clustering) absorb($fixedeffects)  
+
+. eststo m6
+
+. gen   elast_ratio_NT = (_b[share_mig_local2_t]*share_mig_local2_t + _b[interaction]*interaction) if tradeable3==0
+(211 missing values generated)
+
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. * Sales, all firms
+. quietly reghdfe logrevenues $regressors $controls, cl($clustering) absorb($fixedeffects)
+
+. eststo y1
+
+. 
+. * Sales, T sector
+. quietly reghdfe logrevenues $regressors $controls if tradeable3==1, cl($clustering) absorb($fixedeffects)
+
+. eststo y2
+
+. 
+. * Sales, NT sector
+. quietly reghdfe logrevenues $regressors $controls if tradeable3==0, cl($clustering) absorb($fixedeffects)
+
+. eststo y3
+
+. 
+. * Ratio, all
+. quietly reghdfe wb_mig_ger $regressors $controls, cl($clustering) absorb($fixedeffects)
+
+. eststo y4
+
+. 
+. * Ratio, T
+. quietly reghdfe wb_mig_ger $regressors $controls if tradeable3==1, cl($clustering) absorb($fixedeffects)
+
+. eststo y5
+
+. 
+. * Ratio, NT
+. quietly reghdfe wb_mig_ger $regressors $controls if tradeable3==0, cl($clustering) absorb($fixedeffects)
+
+. eststo y6
+
+. 
+. 
+. ****************************
+. * Table 1
+. * Table C8: OLS estimates — revenues and wage-bill ratio
+. ****************************
+. 
+. * Variables: logrevenues (log annual revenues), wb_mig_ger (log immigrant-to-native
+. *   wage bill ratio); share_mig_local2_t (LLM immigrant share of wage bill),
+. *   interaction (share_mig_local2_t x log emp 2003)
+. * Selection: 2008-2011, establishments >= 10 employees, >= 2 non-missing revenue
+. *   observations, turnover_type = 1; FE: ind_med_time, betnr, LLM linear trend,
+. *   cost_sales_03 trend; SE clustered at (ind_2dig, local_labor11)
+. * Outcome: logrevenues (cols 1-3) and wb_mig_ger (cols 4-6)
+. * Sectors: All / Tradable (tradeable3=1) / Non-tradable (tradeable3=0)
+. * N (unweighted) reported via stats(N N_clust) in estout.
+. 
+. esttab y*, se nocons unstack star(* 0.10 ** 0.05  *** 0.01)  mtitles("All,sales" "T,sales" "NT,sales" "All,ratio" "T,ratio" "NT,ratio") keep(share_mig_local2_t interaction)
+
+------------------------------------------------------------------------------------------------------------
+                      (1)             (2)             (3)             (4)             (5)             (6)   
+                All,sales         T,sales        NT,sales       All,ratio         T,ratio        NT,ratio   
+------------------------------------------------------------------------------------------------------------
+share_mig_~t        10.55           8.857           58.72          1637.8*         1604.2*         -0.283   
+                  (21.74)         (22.72)             (.)         (859.5)         (899.6)         (4.346)   
+
+interaction        -3.349          -3.317          -35.38          -414.7*         -404.5*        -0.0500   
+                  (4.960)         (5.148)             (.)         (213.7)         (222.9)         (1.170)   
+------------------------------------------------------------------------------------------------------------
+N                     263             211              52             263             211              52   
+------------------------------------------------------------------------------------------------------------
+Standard errors in parentheses
+* p<0.10, ** p<0.05, *** p<0.01
+
+. 
+. 
+. 
+. 
+. ****************************
+. * Table 2
+. 
+. ****************************
+. * Table 2
+. * Table C9: 2SLS estimates — revenues and wage-bill ratio
+. ****************************
+. 
+. * Variables: as Table C8 above
+. * Instrument: instrument3n_new (shift-share instrument: 2003 LLM origin-country
+. *   shares x national employment growth rates) and its interaction with log emp 2003
+. * Table shows causal effects of local immigrant inflows on firm outcomes.
+. *   theta_1: average effect; theta_2: heterogeneity by initial firm size.
+. * KP F-statistics reported via di after estout.
+. * N (unweighted) reported via stats(N N_clust) in estout.
+. 
+. * Table C9: 2SLS estimates — revenues and wage-bill ratio
+. ****************************
+. 
+. * Variables: as Table C8 above
+. * Instrument: instrument3n_new (shift-share, national growth x 2003 LLM shares),
+. *   and its interaction with log emp 2003
+. * Kleibergen-Paap F-statistics reported below the estout.
+. * N (unweighted) reported via stats(N N_clust) in estout.
+. 
+. *Table C9: Effects of immigration for firms of different sizes: 2SLS estimates
+. 
+. esttab m*, se nocons unstack star(* 0.10 ** 0.05  *** 0.01)  mtitles("All,sales" "T,sales" "NT,sales" "All,ratio" "T,ratio" "NT,ratio") keep(share_mig_local2_t interaction)
+
+------------------------------------------------------------------------------------------------------------
+                      (1)             (2)             (3)             (4)             (5)             (6)   
+                All,sales         T,sales        NT,sales       All,ratio         T,ratio        NT,ratio   
+------------------------------------------------------------------------------------------------------------
+share_mig_~t        162.7           240.6         -4686.7          1747.7**        1662.5**         421.3   
+                  (261.0)         (284.2)       (52101.0)         (629.8)         (753.0)        (4821.6)   
+
+interaction        -48.22          -66.01          1046.4          -465.5***       -423.1**        -92.99   
+                  (67.15)         (69.40)       (11777.8)         (158.6)         (171.1)        (1089.7)   
+------------------------------------------------------------------------------------------------------------
+N                     263             211              52             263             211              52   
+------------------------------------------------------------------------------------------------------------
+Standard errors in parentheses
+* p<0.10, ** p<0.05, *** p<0.01
+
+. dis "lag: `lag'    " 
+lag:     
+
+. dis "Fstat 1st stage all, betnr: `fstat_all'"
+Fstat 1st stage all, betnr: .703283292786084
+
+. dis "Fstat 1st stage T, betnr: `fstat_T'"
+Fstat 1st stage T, betnr: 3.319307478415489
+
+. dis "Fstat 1st stage NT, betnr: `fstat_NT'"
+Fstat 1st stage NT, betnr: .004200169603536
+
+. eststo clear
+
+. 
+. 
+. 
+. * Elasticity of sales and ratio for all firms, T sector and NT sector 
+.         
+. xtile decile_emp        = logemp_tot_firm03, nq(10)
+
+. xtile decile_emp_T      = logemp_tot_firm03 if tradeable3==1, nq(10)
+
+. xtile decile_emp_NT = logemp_tot_firm03 if tradeable3==0, nq(10)        
+
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+.  *All firms
+. quietly reghdfe share_mig_local2_t  $instruments $controls, cl($clustering) absorb($fixedeffects) 
+
+. eststo f1 
+
+. quietly reghdfe share_mig_local2_t $instruments $controls if tradeable3==1, cl($clustering) absorb($fixedeffects) 
+
+. eststo f3
+
+. quietly reghdfe share_mig_local2_t $instruments $controls if tradeable3==0, cl($clustering) absorb($fixedeffects) 
+
+. eststo f5
+
+. 
+. quietly reghdfe interaction  $instruments $controls, cl($clustering) absorb($fixedeffects) 
+
+. eststo f2
+
+. quietly reghdfe interaction $instruments $controls if tradeable3==1, cl($clustering) absorb($fixedeffects) 
+
+. eststo f4
+
+. quietly reghdfe interaction $instruments $controls if tradeable3==0, cl($clustering) absorb($fixedeffects) 
+
+. eststo f6
+
+. 
+. ****************************
+. * Table 3
+. * Table C10: First-stage regressions
+. ****************************
+. 
+. * Variables: share_mig_local2_t and interaction (endogenous regressors);
+. *   instrument3n_new and interaction (instruments)
+. * Selection: same sample as Table C9
+. * N (unweighted) reported via stats(N N_clust) in estout.
+. 
+. *Table C10: Effects of immigration for firms of different sizes: First stage regressions
+. esttab f1 f2 f3 f4 f5 f6, se nocons unstack star(* 0.10 ** 0.05  *** 0.01)  mtitles("All,base" "All,interaction" "T,base" "T,interaction" "NT,base" "NT,interaction")
+
+------------------------------------------------------------------------------------------------------------
+                      (1)             (2)             (3)             (4)             (5)             (6)   
+                 All,base    All,intera~n          T,base    T,interact~n         NT,base    NT,interac~n   
+------------------------------------------------------------------------------------------------------------
+instrument~w       -13.27          -66.53          -12.93          -74.90          -1.613           2.102   
+                  (16.49)         (64.14)         (17.31)         (71.39)             (.)         (12.25)   
+
+c.instrume~i       -0.273           3.736          -0.356           4.846           0.373          -1.875   
+                  (4.568)         (18.00)         (4.485)         (18.62)             (.)         (4.885)   
+
+c.logemp_t~r     -0.00405         -0.0156        -0.00417         -0.0177       -0.000490         0.00245   
+                (0.00482)        (0.0208)       (0.00317)        (0.0138)             (.)       (0.00755)   
+------------------------------------------------------------------------------------------------------------
+N                     263             263             211             211              52              52   
+------------------------------------------------------------------------------------------------------------
+Standard errors in parentheses
+* p<0.10, ** p<0.05, *** p<0.01
+
+. 
+. 
+. 
+. 
+. 
+. *-------------------------------------------------------------------------------
+. * Pre-trend analysis
+. *-------------------------------------------------------------------------------
+. 
+. 
+. foreach lag in "1" "2" "3" "4" "5" {
+  2.                                                         
+. cap drop _est*
+  3. 
+. quietly ivreghdfe logrevenuesL`lag' ( $regressors = $instruments ) $controls, cl($clustering) absorb($fixedeffects) 
+  4. eststo m1
+  5. local fstat_all=e(widstat)
+  6. 
+. quietly ivreghdfe wb_mig_gerL`lag'  ( $regressors = $instruments ) $controls, cl($clustering) absorb($fixedeffects)
+  7. eststo m4
+  8. 
+. 
+. 
+. 
+. ****************************
+. * Table 4
+. * Table C11: Pre-trend tests (lags 1-5)
+. ****************************
+. 
+. * Variables: logrevenueLh and wb_mig_gerLh (outcomes lagged h=1..5 years)
+. * Instrument: same shift-share as Table C9
+. * Selection: same sample as Table C9
+. * Table tests whether instrument predicts outcomes h years prior to 2008.
+. * N (unweighted) reported via stats(N N_clust) in estout.
+. *Fstats for each of the regressions displayed below each table, N obs same as the columns in same order
+. *Table C11: Pre-trends tests
+. 
+. esttab m*, se nocons unstack star(* 0.10 ** 0.05  *** 0.01)  mtitles("All,sales" "All,ratio") keep(share_mig_local2_t interaction)
+  9. dis "lag: `lag'    " 
+ 10. dis "Fstat 1st stage all, betnr: `fstat_all'"
+ 11. 
+. eststo clear
+ 12. 
+. }
+
+--------------------------------------------
+                      (1)             (2)   
+                All,sales       All,ratio   
+--------------------------------------------
+share_mig_~t        942.0          -586.3   
+                (54874.1)         (800.1)   
+
+interaction        -459.4           159.9   
+                (26425.2)         (216.1)   
+--------------------------------------------
+N                     138             255   
+--------------------------------------------
+Standard errors in parentheses
+* p<0.10, ** p<0.05, *** p<0.01
+lag: 1    
+Fstat 1st stage all, betnr: .0001554395578771
+
+--------------------------------------------
+                      (1)             (2)   
+                All,sales       All,ratio   
+--------------------------------------------
+share_mig_~t       -24.44          -16.26   
+                 (1545.3)         (17.48)   
+
+interaction         1.695           3.998   
+                  (479.9)         (4.357)   
+--------------------------------------------
+N                     129             247   
+--------------------------------------------
+Standard errors in parentheses
+* p<0.10, ** p<0.05, *** p<0.01
+lag: 2    
+Fstat 1st stage all, betnr: .0037036199522781
+
+--------------------------------------------
+                      (1)             (2)   
+                All,sales       All,ratio   
+--------------------------------------------
+share_mig_~t        431.7           17.34   
+                 (3505.9)         (20.11)   
+
+interaction        -124.8          -4.393   
+                  (887.0)         (5.261)   
+--------------------------------------------
+N                     114             249   
+--------------------------------------------
+Standard errors in parentheses
+* p<0.10, ** p<0.05, *** p<0.01
+lag: 3    
+Fstat 1st stage all, betnr: .011994683234393
+
+--------------------------------------------
+                      (1)             (2)   
+                All,sales       All,ratio   
+--------------------------------------------
+share_mig_~t        668.0           5.260   
+                  (811.3)         (10.71)   
+
+interaction        -203.5          -1.421   
+                  (255.2)         (2.814)   
+--------------------------------------------
+N                     149             251   
+--------------------------------------------
+Standard errors in parentheses
+* p<0.10, ** p<0.05, *** p<0.01
+lag: 4    
+Fstat 1st stage all, betnr: .0866483709617826
+Warning: estimated covariance matrix of moment conditions not of full rank.
+         overidentification statistic not reported, and standard errors and
+         model tests should be interpreted with caution.
+Possible causes:
+         number of clusters insufficient to calculate robust covariance matrix
+         singleton dummy variable (dummy with one 1 and N-1 0s or vice versa)
+partial option may address problem.
+
+--------------------------------------------
+                      (1)             (2)   
+                All,sales       All,ratio   
+--------------------------------------------
+share_mig_~t       -885.7          -3.332   
+                 (1761.0)         (8.918)   
+
+interaction         244.3           0.988   
+                  (513.6)         (2.325)   
+--------------------------------------------
+N                     166             247   
+--------------------------------------------
+Standard errors in parentheses
+* p<0.10, ** p<0.05, *** p<0.01
+lag: 5    
+Fstat 1st stage all, betnr: .0675267828084655
+
+. 
+. 
+. *Revenues
+. 
+. quietly ivreghdfe logrevenues ( $regressors = $instruments ) $controls, cl($clustering) absorb($fixedeffects) 
+
+. eststo z1
+
+. local fstat_1=e(widstat)
+
+. quietly ivreghdfe logrevenues ( $regressors = $instruments ) , cl($clustering) absorb($fixedeffects) 
+
+. eststo z2
+
+. local fstat_2=e(widstat)
+
+. quietly ivreghdfe logrevenues ( $regressors = $instruments ) $controls, cl($clustering) absorb(ind_med_time betnr i.local_labor11#c.jahr) 
+
+. eststo z3
+
+. local fstat_3=e(widstat)
+
+. quietly ivreghdfe logrevenues ( $regressors = $instruments ) $controls, cl($clustering) absorb(i.local_labor11#c.jahr betnr c.cost_sales_03#i.jahr) 
+
+. eststo z4
+
+. local fstat_4=e(widstat)
+
+. quietly ivreghdfe logrevenues ( $regressors = $instruments ) $controls, cl($clustering) absorb(ind_med_time betnr c.cost_sales_03#i.jahr) 
+
+. eststo z5
+
+. local fstat_5=e(widstat)
+
+. quietly ivreghdfe logrevenues ( $regressors = $instruments ) $controls, cl($clustering) absorb(ind_med_time betnr i.local_labor11#i.jahr c.cost_sales_03#i.jahr) 
+Warning: estimated covariance matrix of moment conditions not of full rank.
+         overidentification statistic not reported, and standard errors and
+         model tests should be interpreted with caution.
+Possible causes:
+         number of clusters insufficient to calculate robust covariance matrix
+         singleton dummy variable (dummy with one 1 and N-1 0s or vice versa)
+partial option may address problem.
+
+. eststo z6
+
+. local fstat_6=e(widstat)
+
+. 
+. 
+. *Ratio of Immigrant to Native Wage Bill
+. 
+. 
+. quietly ivreghdfe wb_mig_ger ( $regressors = $instruments ) $controls, cl($clustering) absorb($fixedeffects) 
+Warning: estimated covariance matrix of moment conditions not of full rank.
+         overidentification statistic not reported, and standard errors and
+         model tests should be interpreted with caution.
+Possible causes:
+         number of clusters insufficient to calculate robust covariance matrix
+         singleton dummy variable (dummy with one 1 and N-1 0s or vice versa)
+partial option may address problem.
+
+. eststo w1
+
+. local fstat_7=e(widstat)
+
+. quietly ivreghdfe wb_mig_ger ( $regressors = $instruments ) , cl($clustering) absorb($fixedeffects) 
+
+. eststo w2
+
+. local fstat_8=e(widstat)
+
+. quietly ivreghdfe wb_mig_ger ( $regressors = $instruments ) $controls, cl($clustering) absorb(ind_med_time betnr i.local_labor11#c.jahr) 
+Warning: estimated covariance matrix of moment conditions not of full rank.
+         overidentification statistic not reported, and standard errors and
+         model tests should be interpreted with caution.
+Possible causes:
+         number of clusters insufficient to calculate robust covariance matrix
+         singleton dummy variable (dummy with one 1 and N-1 0s or vice versa)
+partial option may address problem.
+
+. eststo w3
+
+. local fstat_9=e(widstat)
+
+. quietly ivreghdfe wb_mig_ger ( $regressors = $instruments ) $controls, cl($clustering) absorb(i.local_labor11#c.jahr betnr c.cost_sales_03#i.jahr) 
+
+. eststo w4
+
+. local fstat_10=e(widstat)
+
+. quietly ivreghdfe wb_mig_ger ( $regressors = $instruments ) $controls, cl($clustering) absorb(ind_med_time betnr c.cost_sales_03#i.jahr) 
+
+. eststo w5
+
+. local fstat_11=e(widstat)
+
+. quietly ivreghdfe wb_mig_ger ( $regressors = $instruments ) $controls, cl($clustering) absorb(ind_med_time betnr i.local_labor11#i.jahr c.cost_sales_03#i.jahr) 
+Warning: estimated covariance matrix of moment conditions not of full rank.
+         overidentification statistic not reported, and standard errors and
+         model tests should be interpreted with caution.
+Possible causes:
+         number of clusters insufficient to calculate robust covariance matrix
+         singleton dummy variable (dummy with one 1 and N-1 0s or vice versa)
+partial option may address problem.
+
+. eststo w6
+
+. local fstat_12=e(widstat)
+
+. 
+. 
+. ****************************
+. * Table 5
+. * Table C12: Robustness — alternative FE specifications
+. ****************************
+. 
+. * Variables: as Table C9; FE variant per column:
+. *   Col 1: Baseline; Col 2: drop cost control; Col 3: drop ind-year FE;
+. *   Col 4: drop LLM linear trend; Col 5: replace linear with LLM-year FE
+. * N (unweighted) reported via stats(N N_clust) in estout.
+. *Fstats for each of the regressions displayed below each table, N obs same as the columns in same order
+. 
+. *Table C12: Robustness exercises for main specification
+. 
+. esttab z*, se nocons unstack star(* 0.10 ** 0.05  *** 0.01)  mtitles("Baseline" "No emp control" "No cost control" "No ind-year FE" "No local trend" "local labor - year FE") keep(share_mig_local2_t interaction)
+
+------------------------------------------------------------------------------------------------------------
+                      (1)             (2)             (3)             (4)             (5)             (6)   
+                 Baseline    No emp con~l    No cost co~l    No ind-yea~E    No local t~d    local labo~E   
+------------------------------------------------------------------------------------------------------------
+share_mig_~t        162.7           165.6           148.6           441.4           31.05       2143930.1   
+                  (261.0)         (175.3)         (273.3)        (1275.8)         (329.4)    (2.08722e+11)   
+
+interaction        -48.22          -49.00          -44.56          -138.1          -22.15          -116.9   
+                  (67.15)         (45.63)         (68.95)         (452.4)         (79.17)         (91.83)   
+------------------------------------------------------------------------------------------------------------
+N                     263             263             263             263             263             136   
+------------------------------------------------------------------------------------------------------------
+Standard errors in parentheses
+* p<0.10, ** p<0.05, *** p<0.01
+
+. 
+. forval x=1/6 {
+  2.         
+.         dis "Fstat 1st stage all, betnr: `fstat_`x'''"
+  3.         
+. }
+Fstat 1st stage all, betnr: .7032832927859296'
+Fstat 1st stage all, betnr: 1.862508370586102'
+Fstat 1st stage all, betnr: .7991293173976519'
+Fstat 1st stage all, betnr: .0229035806535289'
+Fstat 1st stage all, betnr: .4339213442762884'
+Fstat 1st stage all, betnr: .0435597688098551'
+
+. 
+. 
+. esttab w*, se nocons unstack star(* 0.10 ** 0.05  *** 0.01)  mtitles("Baseline" "No emp control" "No cost control" "No ind-year FE" "No local trend" "local labor - year FE") keep(share_mig_local2_t interaction)
+
+------------------------------------------------------------------------------------------------------------
+                      (1)             (2)             (3)             (4)             (5)             (6)   
+                 Baseline    No emp con~l    No cost co~l    No ind-yea~E    No local t~d    local labo~E   
+------------------------------------------------------------------------------------------------------------
+share_mig_~t       1747.7**        1307.5          1447.7**        5948.8          2164.2      16519023.2   
+                  (629.8)         (762.7)         (683.7)       (10213.9)        (1777.2)    (2.36001e+11)   
+
+interaction        -465.5***       -348.2          -389.7**       -1689.3          -585.8          -498.4***
+                  (158.6)         (203.3)         (172.5)        (3383.6)         (530.6)         (66.22)   
+------------------------------------------------------------------------------------------------------------
+N                     263             263             263             263             263             136   
+------------------------------------------------------------------------------------------------------------
+Standard errors in parentheses
+* p<0.10, ** p<0.05, *** p<0.01
+
+. 
+. forval x=7/12 {
+  2.         
+.         dis "Fstat 1st stage all, betnr: `fstat_`x'''"
+  3.         
+. }
+Fstat 1st stage all, betnr: .7598374210908301'
+Fstat 1st stage all, betnr: 2.083716753515758'
+Fstat 1st stage all, betnr: .754710341680914'
+Fstat 1st stage all, betnr: .022903580653529'
+Fstat 1st stage all, betnr: .4339213442762881'
+Fstat 1st stage all, betnr: .0435597688098551'
+
+. 
+. 
+. 
+. ****************************
+. * Table 6
+. * Table C13 / Figure 3: Mean firm-level elasticity by size decile
+. ****************************
+. 
+. * Variables: elast_lrev / elast_lrev_T / elast_lrev_NT (fitted revenue elasticity
+. *   from 2SLS, evaluated firm-by-firm); elast_ratio / elast_ratio_T / elast_ratio_NT
+. *   (fitted wage-bill ratio elasticity); decile_emp / decile_emp_T / decile_emp_NT
+. *   (decile of log employment in 2003, defined pooled and by sector)
+. * Selection: same sample as Table C9, split by tradeable3
+. * Table provides the empirical counterpart to Figure 3 in the paper.
+. * FDZ: unweighted counts per decile shown first (via stat(n ...)), then p50 and mean.
+. 
+. 
+. tabstat elast_lrev_T if tradeable3==1, by(decile_emp) stat(count mean) nototal
+
+Summary for variables: elast_lrev_T
+Group variable: decile_emp (10 quantiles of logemp_tot_firm03)
+
+decile_emp |         N      Mean
+-----------+--------------------
+         1 |        16   9.99232
+         2 |        18   8.32607
+         3 |        24  5.010168
+         4 |        22  2.055825
+         5 |        23 -.3981865
+         6 |        16  -1.06447
+         7 |        25  -1.52414
+         8 |        25 -1.796633
+         9 |        21 -1.795274
+        10 |        21 -1.858758
+--------------------------------
+
+. tabstat elast_lrev_NT if tradeable3==0, by(decile_emp) stat(count mean) nototal
+
+Summary for variables: elast_lrev_NT
+Group variable: decile_emp (10 quantiles of logemp_tot_firm03)
+
+decile_emp |         N      Mean
+-----------+--------------------
+         1 |        12 -237.6779
+         2 |         7 -148.5599
+         3 |         2  -395.532
+         4 |         6 -107.4232
+         5 |         2 -148.6002
+         6 |        11 -86.08359
+         7 |         2  -130.704
+         8 |         2  -57.2833
+         9 |         4 -53.83349
+        10 |         4 -19.65684
+--------------------------------
+
+. 
+. tabstat elast_ratio_T if  tradeable3==1, by(decile_emp) stat(count mean) nototal
+
+Summary for variables: elast_ratio_T
+Group variable: decile_emp (10 quantiles of logemp_tot_firm03)
+
+decile_emp |         N      Mean
+-----------+--------------------
+         1 |        16  78.19584
+         2 |        18  67.98244
+         3 |        24  48.11087
+         4 |        22  26.32191
+         5 |        23  11.55976
+         6 |        16  7.291099
+         7 |        25  5.300263
+         8 |        25  3.797253
+         9 |        21  2.666919
+        10 |        21  .6349438
+--------------------------------
+
+. tabstat elast_ratio_NT if tradeable3==0, by(decile_emp) stat(count mean) nototal
+
+Summary for variables: elast_ratio_NT
+Group variable: decile_emp (10 quantiles of logemp_tot_firm03)
+
+decile_emp |         N      Mean
+-----------+--------------------
+         1 |        12   21.6021
+         2 |         7  13.55473
+         3 |         2  36.49744
+         4 |         6  9.991059
+         5 |         2  14.02959
+         6 |        11  8.217447
+         7 |         2  12.56319
+         8 |         2  5.517648
+         9 |         4  5.190465
+        10 |         4   2.41512
+--------------------------------
+
+. 
+. 
+. 
+. 
+. log close 
+      name:  <unnamed>
+       log:  /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/log/8_validation_regressions.log
+  log type:  text
+ closed on:   9 Sep 2026, 15:16:45
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

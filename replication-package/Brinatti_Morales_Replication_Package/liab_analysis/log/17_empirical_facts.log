@@ -1,0 +1,2860 @@
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/log/17_empirical_facts.log
+  log type:  text
+ opened on:   9 Sep 2026, 15:57:47
+
+. 
+. * Empirical facts: immigrant share across the establishment size distribution
+. * Agostina Brinatti & Nicolas Morales
+. * Source data: LIAB Longitudinal Model (version 1993-2014), IAB
+. 
+. /*      This dofile produces the underlying series for Tables A1, A2 and for
+>         Figures 1, A1a-d, A2a-b, A3, A4a-b, A6a-b. All figures are reported as
+>         tables with point estimates (survey-weighted medians/means) and 95%
+>         bootstrap confidence intervals (200 repetitions). No graphs are produced.
+> 
+>         Output tables in this dofile:
+>           Table 1  - Table A1: Descriptive statistics by sector and year
+>           Table 2  - Table A2: Intensive vs. extensive margin
+>           Table 3  - Figure 1: Median immigrant wage-bill share by size bin
+>           Table 4  - Figure A1(a): Controlling for industry and geography
+>           Table 5  - Figure A1(b): Tradable vs. non-tradable
+>           Table 6  - Figure A1(c): Exporter vs. non-exporter
+>           Table 7  - Figure A1(d): Exporter vs. non-exporter, residualised
+>           Table 8  - Figure A2(a): College vs. non-college sub-groups
+>           Table 9  - Figure A2(b): Single-establishment and German-owned firms
+>           Table 10 - Figure A3: Share of establishments hiring immigrants
+>           Table 11 - Figure A4(a): By tenure
+>           Table 12 - Figure A4(b): By age
+>           Table 13 - Figure A6(a): Number of origin regions by size bin
+>           Table 14 - Figure A6(b): Number of origin regions by immigrant-share group
+> 
+>         FDZ note: unweighted counts (N) are reported immediately before each
+>           weighted statistic throughout this dofile (Guidelines §4.5).
+> */
+. 
+. /*==============================================================================
+>   EMPIRICAL FACTS — Tables version
+>   Brinatti & Morales (2026)
+> 
+>   Produces the underlying data tables for Figures 1, A1, A2, A3, A4, A6
+>   with point estimates and 95% bootstrap confidence intervals.
+>   No graphs are produced.
+> ==============================================================================*/
+. 
+. clear
+
+. set more off
+
+. set matsize 10000
+set matsize ignored.
+    Matrix sizes are no longer limited by c(matsize) in modern Statas.  Matrix sizes are now limited by edition of Stata.  See limits for more details.
+
+. set linesize 255
+
+. set seed 1234
+
+. 
+. capture adopath++ ${prog}
+
+. 
+. 
+. 
+. /*------------------------------------------------------------------------------
+>   0. LOAD DATA AND CONSTRUCT VARIABLES
+> ------------------------------------------------------------------------------*/
+. 
+. use "${data}/establishment_level_liab.dta", clear
+
+. label val w93_3_gen w93_3_gen_en
+
+. 
+. * Size bins
+. gen size_bin = .
+(15,807 missing values generated)
+
+. replace size_bin = 1  if emp_tot_tot >=   1 & emp_tot_tot <=  10
+(5,334 real changes made)
+
+. replace size_bin = 2  if emp_tot_tot >=  11 & emp_tot_tot <=  20
+(3,764 real changes made)
+
+. replace size_bin = 3  if emp_tot_tot >=  21 & emp_tot_tot <=  30
+(1,555 real changes made)
+
+. replace size_bin = 4  if emp_tot_tot >=  31 & emp_tot_tot <=  50
+(2,188 real changes made)
+
+. replace size_bin = 5  if emp_tot_tot >=  51 & emp_tot_tot <=  70
+(687 real changes made)
+
+. replace size_bin = 6  if emp_tot_tot >=  71 & emp_tot_tot <= 100
+(541 real changes made)
+
+. replace size_bin = 7  if emp_tot_tot >= 101 & emp_tot_tot <= 150
+(391 real changes made)
+
+. replace size_bin = 8  if emp_tot_tot >= 151 & emp_tot_tot <= 200
+(143 real changes made)
+
+. replace size_bin = 9  if emp_tot_tot >= 201 & emp_tot_tot <= 500
+(155 real changes made)
+
+. replace size_bin = 10 if emp_tot_tot >= 501 & emp_tot_tot !=   .
+(19 real changes made)
+
+. gen decile_wbill = size_bin
+(1,030 missing values generated)
+
+. 
+. * Derived employment stocks
+. gen emp_tot_old   = emp_tot_tot - emp_tot_young
+
+. gen emp_tot_ncoll = emp_tot_tot - emp_tot_college
+
+. rename emp_tot_experience10 emp_tot_exp10
+
+. gen emp_tot_nexp10 = emp_tot_tot - emp_tot_exp10
+
+. 
+. * Size bins for college / non-college sub-groups
+. foreach x in college ncoll {
+  2.     gen size_bin_`x' = .
+  3.     replace size_bin_`x' = 1  if emp_tot_`x' >=   1 & emp_tot_`x' <=  10
+  4.     replace size_bin_`x' = 2  if emp_tot_`x' >=  11 & emp_tot_`x' <=  20
+  5.     replace size_bin_`x' = 3  if emp_tot_`x' >=  21 & emp_tot_`x' <=  30
+  6.     replace size_bin_`x' = 4  if emp_tot_`x' >=  31 & emp_tot_`x' <=  40
+  7.     replace size_bin_`x' = 5  if emp_tot_`x' >=  41 & emp_tot_`x' <=  50
+  8.     replace size_bin_`x' = 6  if emp_tot_`x' >=  51 & emp_tot_`x' <= 70
+  9.     replace size_bin_`x' = 7  if emp_tot_`x' >= 71 & emp_tot_`x' <= 90
+ 10.     replace size_bin_`x' = 8  if emp_tot_`x' >= 91 & emp_tot_`x' <= 110
+ 11.     replace size_bin_`x' = 9  if emp_tot_`x' >= 111 & emp_tot_`x' <= 150
+ 12.     replace size_bin_`x' = 10 if emp_tot_`x' >= 151 & emp_tot_`x' !=   .
+ 13. }
+(15,807 missing values generated)
+(4,311 real changes made)
+(788 real changes made)
+(208 real changes made)
+(67 real changes made)
+(28 real changes made)
+(22 real changes made)
+(5 real changes made)
+(8 real changes made)
+(3 real changes made)
+(2 real changes made)
+(15,807 missing values generated)
+(5,758 real changes made)
+(3,483 real changes made)
+(1,462 real changes made)
+(979 real changes made)
+(950 real changes made)
+(633 real changes made)
+(339 real changes made)
+(201 real changes made)
+(227 real changes made)
+(254 real changes made)
+
+. gen decile_wbill_coll  = size_bin_college
+(10,365 missing values generated)
+
+. gen decile_wbill_ncoll = size_bin_ncoll
+(1,521 missing values generated)
+
+. 
+. * Immigrant share variables
+. gen mig_share       = 1 - wbill_german_tot / wbill_tot_tot
+(2 missing values generated)
+
+. gen mig_share_coll  = 1 - wbill_german_college / wbill_tot_college
+(9,955 missing values generated)
+
+. gen mig_share_ncoll = 1 - (wbill_german_tot - wbill_german_college) ///
+>                           / (wbill_tot_tot   - wbill_tot_college)
+(404 missing values generated)
+
+. 
+. * Residualised immigrant share
+. egen industry_time    = group(w93_3_gen    jahr)
+
+. egen local_labor_time = group(local_labor11 jahr)
+
+. quietly reghdfe mig_share, absorb(industry_time local_labor_time) resid
+
+. predict mig_share_noindloc, r
+(278 missing values generated)
+
+. 
+. * Sub-group immigrant shares
+. gen mig_share_t         = mig_share          if tradeable3 == 1
+(10,765 missing values generated)
+
+. gen mig_share_nt        = mig_share          if tradeable3 == 0
+(5,044 missing values generated)
+
+. gen mig_share_exp       = mig_share          if exports_foreign > 0 & exports_foreign != .
+(13,180 missing values generated)
+
+. gen mig_share_nexp      = mig_share          if exports_foreign == 0
+(5,728 missing values generated)
+
+. gen mig_share_exp_nind  = mig_share_noindloc if exports_foreign > 0 & exports_foreign != .
+(13,239 missing values generated)
+
+. gen mig_share_nexp_nind = mig_share_noindloc if exports_foreign == 0
+(5,901 missing values generated)
+
+. gen mig_share_sing      = mig_share          if single_establishment == 1
+(5,803 missing values generated)
+
+. gen mig_share_nfor      = mig_share          if foreign_parent == 0
+(3,255 missing values generated)
+
+. gen mig_share_el10      = (wbill_tot_experience10 - wbill_german_experience10) ///
+>                            / wbill_tot_experience10
+(1,622 missing values generated)
+
+. gen mig_share_ep10      = ((wbill_tot_tot - wbill_tot_experience10) ///
+>                            - (wbill_german_tot - wbill_german_experience10)) ///
+>                            / (wbill_tot_tot - wbill_tot_experience10)
+(6,885 missing values generated)
+
+. gen mig_share_young     = 1 - wbill_german_young / wbill_tot_young
+(1,427 missing values generated)
+
+. gen mig_share_old       = 1 - (wbill_german_tot - wbill_german_young) ///
+>                               / (wbill_tot_tot   - wbill_tot_young)
+(5,459 missing values generated)
+
+. 
+. * Extensive margin
+. gen hire_immigrant = (mig_share > 0)
+
+. 
+. * Number of origin countries
+. gen number_of_countries = (wbill_eu_orig1_tot    > 0) + (wbill_eu_orig2_tot    > 0) ///
+>                         + (wbill_eu_2000_tot      > 0) + (wbill_turkey_tot      > 0) ///
+>                         + (wbill_yugoslavia_tot   > 0) + (wbill_europe_other_tot> 0) ///
+>                         + (wbill_asia_tot         > 0) + (wbill_africa_me_tot   > 0) ///
+>                         + (wbill_americas_tot     > 0)
+
+. 
+. * Immigrant share groups for A6b
+. gen mig_share_group = .
+(15,807 missing values generated)
+
+. forvalues g = 1/20 {
+  2.     local lo = (`g' - 1) / 100
+  3.     local hi = `g'       / 100
+  4.     replace mig_share_group = `g' if mig_share >= `lo' & mig_share < `hi'
+  5. }
+(10,362 real changes made)
+(217 real changes made)
+(204 real changes made)
+(199 real changes made)
+(203 real changes made)
+(185 real changes made)
+(168 real changes made)
+(166 real changes made)
+(126 real changes made)
+(152 real changes made)
+(149 real changes made)
+(164 real changes made)
+(123 real changes made)
+(132 real changes made)
+(128 real changes made)
+(109 real changes made)
+(110 real changes made)
+(97 real changes made)
+(107 real changes made)
+(102 real changes made)
+
+. 
+. * Number of immigrants (Table A2)
+. gen number_of_imm = emp_eu_orig1_tot  + emp_eu_orig2_tot  + emp_eu_2000_tot  ///
+>                   + emp_turkey_tot    + emp_yugoslavia_tot + emp_europe_other_tot ///
+>                   + emp_asia_tot      + emp_africa_me_tot  + emp_americas_tot
+
+. 
+. 
+. /*------------------------------------------------------------------------------
+>   TABLE A1: Descriptive Statistics
+> ------------------------------------------------------------------------------*/
+. 
+. ****************************
+. * Table 1
+. * Table A1: Descriptive statistics by sector and year
+. ****************************
+. 
+. * Columns: Tradable 2003, Tradable 2011, Non-Tradable 2003, Non-Tradable 2011
+. * Rows:
+. *   Panel 1 — N establishments (unweighted), mean employment, mean college employment
+. *   Panel 2 — Share of employment by origin region (Germany, Europe High-Income,
+. *     EU Middle Income, EU joined 2004, Europe other, Turkey, Former Yugoslavia,
+. *     Asia-Pacific, Africa and Middle East, Americas)
+. * Selection: establishments >= 10 employees; years 2003 and 2011 only
+. * FDZ: row 1 (N establishments) is unweighted count; all other rows are
+. *   survey-weighted means (§4.5). Unweighted N per cell shown first.
+. 
+. * --- Panel 1: establishment counts and mean employment ---
+. 
+. * N establishments (unweighted) — reported directly, no weights
+. di ""
+
+
+. di "======================================================================"
+======================================================================
+
+. di "TABLE A1 — Panel 1: N, Mean Employment, Mean College Employment"
+TABLE A1 — Panel 1: N, Mean Employment, Mean College Employment
+
+. di "  Selection: emp_tot_tot >= 10, years 2003 and 2011"
+  Selection: emp_tot_tot >= 10, years 2003 and 2011
+
+. di "======================================================================"
+======================================================================
+
+. 
+. * Unweighted counts (the N establishments row in the paper)
+. tabstat emp_tot_tot if emp_tot_tot >= 10 & (jahr == 2003 | jahr == 2011), ///
+>     by(tradeable3) stat(count) nototal
+
+Summary for variables: emp_tot_tot
+Group variable: tradeable3 
+
+tradeable3 |         N
+-----------+----------
+         0 |      1958
+         1 |       988
+----------------------
+
+. 
+. * Unweighted counts by sector x year (for FDZ cell-level verification)
+. table jahr tradeable3 if emp_tot_tot >= 10 & (jahr == 2003 | jahr == 2011)
+
+------------------------
+          |  tradeable3 
+     jahr |     0      1
+----------+-------------
+     2003 |   752    427
+     2011 | 1,206    561
+------------------------
+
+. 
+. * Survey-weighted mean employment and mean college employment by sector x year
+. bysort tradeable3 jahr: sum emp_tot_tot emp_tot_college ///
+>     [fw=weight_survey] if emp_tot_tot >= 10 & (jahr == 2003 | jahr == 2011)
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-> tradeable3 = 0, jahr = 2003
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+ emp_tot_tot |     31,189    41.30193    59.65693         10   1145.525
+emp_tot_co~e |     31,189    4.729482    9.171291          0   149.8167
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-> tradeable3 = 0, jahr = 2004
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+ emp_tot_tot |          0
+emp_tot_co~e |          0
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-> tradeable3 = 0, jahr = 2005
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+ emp_tot_tot |          0
+emp_tot_co~e |          0
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-> tradeable3 = 0, jahr = 2006
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+ emp_tot_tot |          0
+emp_tot_co~e |          0
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-> tradeable3 = 0, jahr = 2007
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+ emp_tot_tot |          0
+emp_tot_co~e |          0
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-> tradeable3 = 0, jahr = 2008
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+ emp_tot_tot |          0
+emp_tot_co~e |          0
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-> tradeable3 = 0, jahr = 2009
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+ emp_tot_tot |          0
+emp_tot_co~e |          0
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-> tradeable3 = 0, jahr = 2010
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+ emp_tot_tot |          0
+emp_tot_co~e |          0
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-> tradeable3 = 0, jahr = 2011
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+ emp_tot_tot |     68,632     40.7581    81.95541         10   2134.553
+emp_tot_co~e |     68,632    4.719362    11.87594          0   285.7944
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-> tradeable3 = 1, jahr = 2003
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+ emp_tot_tot |     17,131    42.87779    50.50401         10   455.3889
+emp_tot_co~e |     17,131    4.402412    7.063308          0   64.34444
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-> tradeable3 = 1, jahr = 2004
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+ emp_tot_tot |          0
+emp_tot_co~e |          0
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-> tradeable3 = 1, jahr = 2005
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+ emp_tot_tot |          0
+emp_tot_co~e |          0
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-> tradeable3 = 1, jahr = 2006
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+ emp_tot_tot |          0
+emp_tot_co~e |          0
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-> tradeable3 = 1, jahr = 2007
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+ emp_tot_tot |          0
+emp_tot_co~e |          0
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-> tradeable3 = 1, jahr = 2008
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+ emp_tot_tot |          0
+emp_tot_co~e |          0
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-> tradeable3 = 1, jahr = 2009
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+ emp_tot_tot |          0
+emp_tot_co~e |          0
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-> tradeable3 = 1, jahr = 2010
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+ emp_tot_tot |          0
+emp_tot_co~e |          0
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-> tradeable3 = 1, jahr = 2011
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+ emp_tot_tot |     33,880    35.30828    37.67549         10   404.4583
+emp_tot_co~e |     33,880    4.178375    6.587668          0         65
+
+
+. 
+. * --- Panel 2: employment shares by origin region ---
+. 
+. * Aggregate share = sum of origin-group employment across all firms in the cell
+. *   divided by sum of total employment in that cell (sector x year).
+. * Computed from survey-weighted sums: share_X = (Σ weight*emp_X) / (Σ weight*emp_tot).
+. 
+. di ""
+
+
+. di "======================================================================"
+======================================================================
+
+. di "TABLE A1 — Panel 2: Share of employment by origin region"
+TABLE A1 — Panel 2: Share of employment by origin region
+
+. di "  Aggregate shares: survey-weighted sum(emp_X) / sum(emp_tot)"
+  Aggregate shares: survey-weighted sum(emp_X) / sum(emp_tot)
+
+. di "  Selection: emp_tot_tot >= 10, years 2003 and 2011"
+  Selection: emp_tot_tot >= 10, years 2003 and 2011
+
+. di "======================================================================"
+======================================================================
+
+. 
+. * Unweighted N per cell first (FDZ §4.5)
+. tabstat emp_tot_tot if emp_tot_tot >= 10 & (jahr == 2003), ///
+>     by(tradeable3) stat(count) nototal
+
+Summary for variables: emp_tot_tot
+Group variable: tradeable3 
+
+tradeable3 |         N
+-----------+----------
+         0 |       752
+         1 |       427
+----------------------
+
+. tabstat emp_tot_tot if emp_tot_tot >= 10 & (jahr == 2011), ///
+>     by(tradeable3) stat(count) nototal
+
+Summary for variables: emp_tot_tot
+Group variable: tradeable3 
+
+tradeable3 |         N
+-----------+----------
+         0 |      1206
+         1 |       561
+----------------------
+
+. 
+. * Survey-weighted employment sums by origin region, sector and year.
+. * The aggregate share for each origin is sum(emp_X [fw]) / sum(emp_tot [fw])
+. * within each tradeable3 x jahr cell — read directly from the sum output.
+. *The number of establishments used for each table below is the number of establishments reported above, for a given sector - year pair.
+. 
+. 
+. 
+. preserve
+
+.     keep if emp_tot_tot >= 10 & (jahr == 2003 | jahr == 2011)
+(12,861 observations deleted)
+
+.     collapse (sum) emp_german_tot emp_eu_orig1_tot emp_eu_orig2_tot      ///
+>                    emp_eu_2000_tot emp_europe_other_tot emp_turkey_tot   ///
+>                    emp_yugoslavia_tot emp_asia_tot emp_africa_me_tot     ///
+>                    emp_americas_tot emp_tot_tot                          ///
+>              [fw=weight_survey], by(tradeable3 jahr)
+
+. 
+.     * Compute aggregate shares within each cell
+.     foreach origin in german eu_orig1 eu_orig2 eu_2000 europe_other     ///
+>                       turkey yugoslavia asia africa_me americas {
+  2.         gen share_`origin' = emp_`origin'_tot / emp_tot_tot
+  3.     }
+
+. 
+.     * FDZ: display numerator and denominator (emp_X_tot and emp_tot_tot)
+.     * for each cell before showing aggregate shares (Guidelines §4.5).
+.     format emp_* %12.0f
+
+.     tabdisp tradeable3 jahr, c(emp_tot_tot)           concise
+
+----------------------------
+tradeable |       jahr      
+3         |    2003     2011
+----------+-----------------
+        0 | 1288166  2797310
+        1 |  734540  1196245
+----------------------------
+
+.     foreach origin in german eu_orig1 eu_orig2 eu_2000 europe_other ///
+>                       turkey yugoslavia asia africa_me americas {
+  2.         tabdisp tradeable3 jahr, c(emp_`origin'_tot)  concise
+  3.     }
+
+----------------------------
+tradeable |       jahr      
+3         |    2003     2011
+----------+-----------------
+        0 | 1157080  2504248
+        1 |  662941  1057289
+----------------------------
+
+------------------------
+tradeable |     jahr    
+3         |  2003   2011
+----------+-------------
+        0 | 12254  24953
+        1 |  6067  11435
+------------------------
+
+------------------------
+tradeable |     jahr    
+3         |  2003   2011
+----------+-------------
+        0 | 14746  29365
+        1 | 10980  15161
+------------------------
+
+------------------------
+tradeable |     jahr    
+3         |  2003   2011
+----------+-------------
+        0 | 14121  34393
+        1 |  8630  16655
+------------------------
+
+------------------------
+tradeable |     jahr    
+3         |  2003   2011
+----------+-------------
+        0 | 18508  46153
+        1 |  9358  16206
+------------------------
+
+------------------------
+tradeable |     jahr    
+3         |  2003   2011
+----------+-------------
+        0 | 15484  37644
+        1 |  8534  25056
+------------------------
+
+------------------------
+tradeable |     jahr    
+3         |  2003   2011
+----------+-------------
+        0 | 13611  27721
+        1 |  6734  12200
+------------------------
+
+------------------------
+tradeable |     jahr    
+3         |  2003   2011
+----------+-------------
+        0 | 17973  38237
+        1 |  7662  15762
+------------------------
+
+------------------------
+tradeable |     jahr    
+3         |  2003   2011
+----------+-------------
+        0 | 13105  29525
+        1 |  8624  14533
+------------------------
+
+------------------------
+tradeable |     jahr    
+3         |  2003   2011
+----------+-------------
+        0 | 11283  25071
+        1 |  5009  11947
+------------------------
+
+. 
+.     format share_* %8.4f
+
+.     tabdisp tradeable3 jahr, c(share_german)        concise
+
+--------------------------
+tradeable |      jahr     
+3         |   2003    2011
+----------+---------------
+        0 | 0.8982  0.8952
+        1 | 0.9025  0.8838
+--------------------------
+
+.     tabdisp tradeable3 jahr, c(share_eu_orig1)      concise
+
+--------------------------
+tradeable |      jahr     
+3         |   2003    2011
+----------+---------------
+        0 | 0.0095  0.0089
+        1 | 0.0083  0.0096
+--------------------------
+
+.     tabdisp tradeable3 jahr, c(share_eu_orig2)      concise
+
+--------------------------
+tradeable |      jahr     
+3         |   2003    2011
+----------+---------------
+        0 | 0.0114  0.0105
+        1 | 0.0149  0.0127
+--------------------------
+
+.     tabdisp tradeable3 jahr, c(share_eu_2000)       concise
+
+--------------------------
+tradeable |      jahr     
+3         |   2003    2011
+----------+---------------
+        0 | 0.0110  0.0123
+        1 | 0.0117  0.0139
+--------------------------
+
+.     tabdisp tradeable3 jahr, c(share_europe_other)  concise
+
+--------------------------
+tradeable |      jahr     
+3         |   2003    2011
+----------+---------------
+        0 | 0.0144  0.0165
+        1 | 0.0127  0.0135
+--------------------------
+
+.     tabdisp tradeable3 jahr, c(share_turkey)        concise
+
+--------------------------
+tradeable |      jahr     
+3         |   2003    2011
+----------+---------------
+        0 | 0.0120  0.0135
+        1 | 0.0116  0.0209
+--------------------------
+
+.     tabdisp tradeable3 jahr, c(share_yugoslavia)    concise
+
+--------------------------
+tradeable |      jahr     
+3         |   2003    2011
+----------+---------------
+        0 | 0.0106  0.0099
+        1 | 0.0092  0.0102
+--------------------------
+
+.     tabdisp tradeable3 jahr, c(share_asia)          concise
+
+--------------------------
+tradeable |      jahr     
+3         |   2003    2011
+----------+---------------
+        0 | 0.0140  0.0137
+        1 | 0.0104  0.0132
+--------------------------
+
+.     tabdisp tradeable3 jahr, c(share_africa_me)     concise
+
+--------------------------
+tradeable |      jahr     
+3         |   2003    2011
+----------+---------------
+        0 | 0.0102  0.0106
+        1 | 0.0117  0.0121
+--------------------------
+
+.     tabdisp tradeable3 jahr, c(share_americas)      concise
+
+--------------------------
+tradeable |      jahr     
+3         |   2003    2011
+----------+---------------
+        0 | 0.0088  0.0090
+        1 | 0.0068  0.0100
+--------------------------
+
+. restore
+
+. 
+. 
+. /*------------------------------------------------------------------------------
+>   TABLE A2: Immigrant share — Intensive vs. Extensive Margin
+> ------------------------------------------------------------------------------*/
+. 
+. 
+. ****************************
+. * Table 2
+. * Table A2: Intensive vs. extensive margin of immigrant hiring
+. ****************************
+. 
+. * Variables: mig_share (dep var: immigrant wage-bill share);
+. *   number_of_countries (count of origin regions with positive wage bill, 0-9);
+. *   number_of_imm (total immigrant headcount)
+. * Selection: establishments >= 10 employees, 2003-2011;
+. *   FE: industry x year (industry_time), LLM x year (local_labor_time);
+. *   SE clustered at betnr
+. * Col 1: number_of_countries only; Col 2: adds number_of_imm
+. * N (unweighted) reported via di after each regression.
+. 
+. reghdfe mig_share number_of_countries if emp_tot_tot >= 10, ///
+>     absorb(industry_time local_labor_time) cluster(betnr)
+(dropped 330 singleton observations)
+(MWFE estimator converged in 11 iterations)
+
+HDFE Linear regression                            Number of obs   =     11,142
+Absorbing 2 HDFE groups                           F(   1,   2520) =     938.18
+Statistics robust to heteroskedasticity           Prob > F        =     0.0000
+                                                  R-squared       =     0.4887
+                                                  Adj R-squared   =     0.3850
+                                                  Within R-sq.    =     0.3767
+Number of clusters (betnr)   =      2,521         Root MSE        =     0.1627
+
+                                     (Std. err. adjusted for 2,521 clusters in betnr)
+-------------------------------------------------------------------------------------
+                    |               Robust
+          mig_share | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+--------------------+----------------------------------------------------------------
+number_of_countries |    .037694   .0012306    30.63   0.000     .0352808    .0401071
+              _cons |   .0117383   .0017305     6.78   0.000      .008345    .0151317
+-------------------------------------------------------------------------------------
+
+Absorbed degrees of freedom:
+----------------------------------------------------------+
+      Absorbed FE | Categories  - Redundant  = Num. Coefs |
+------------------+---------------------------------------|
+    industry_time |      1059           0        1059     |
+ local_labor_time |       828           9         819     |
+----------------------------------------------------------+
+
+. reghdfe mig_share number_of_countries number_of_imm if emp_tot_tot >= 10, ///
+>     absorb(industry_time local_labor_time) cluster(betnr)
+(dropped 330 singleton observations)
+(MWFE estimator converged in 11 iterations)
+
+HDFE Linear regression                            Number of obs   =     11,142
+Absorbing 2 HDFE groups                           F(   2,   2520) =     482.28
+Statistics robust to heteroskedasticity           Prob > F        =     0.0000
+                                                  R-squared       =     0.4893
+                                                  Adj R-squared   =     0.3857
+                                                  Within R-sq.    =     0.3775
+Number of clusters (betnr)   =      2,521         Root MSE        =     0.1626
+
+                                     (Std. err. adjusted for 2,521 clusters in betnr)
+-------------------------------------------------------------------------------------
+                    |               Robust
+          mig_share | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+--------------------+----------------------------------------------------------------
+number_of_countries |   .0391636   .0014106    27.76   0.000     .0363975    .0419297
+      number_of_imm |  -.0008898   .0004404    -2.02   0.043    -.0017533   -.0000263
+              _cons |   .0115589   .0017146     6.74   0.000     .0081968    .0149211
+-------------------------------------------------------------------------------------
+
+Absorbed degrees of freedom:
+----------------------------------------------------------+
+      Absorbed FE | Categories  - Redundant  = Num. Coefs |
+------------------+---------------------------------------|
+    industry_time |      1059           0        1059     |
+ local_labor_time |       828           9         819     |
+----------------------------------------------------------+
+
+. 
+. 
+. /*------------------------------------------------------------------------------
+>   STEP 1: POINT ESTIMATES FROM ORIGINAL DATA
+> ------------------------------------------------------------------------------*/
+. 
+. preserve
+
+.     collapse (median) mig_share         mig_share_noindloc                   ///
+>                       mig_share_t       mig_share_nt                         ///
+>                       mig_share_exp     mig_share_nexp                       ///
+>                       mig_share_exp_nind mig_share_nexp_nind                 ///
+>                       mig_share_sing    mig_share_nfor                       ///
+>                       mig_share_young   mig_share_old                        ///
+>                       mig_share_el10    mig_share_ep10                       ///
+>              (mean)   hire_immigrant    number_of_countries                  ///
+>              [fw=weight_survey], by(decile_wbill)
+
+.     save "${data}/medians_main.dta", replace
+file /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/data/medians_main.dta saved
+
+. restore
+
+. 
+. * Unweighted N per bin for each series (collapse count on the series variable;
+. * missing = out of subsample, so count gives the correct unweighted N).
+. * FDZ: also count non-missing observations of the numerator and denominator
+. * of each share separately, so FDZ can verify both sides (Guidelines §4.5).
+. * mig_share        = 1 - wbill_german_tot   / wbill_tot_tot
+. * mig_share_young  = 1 - wbill_german_young / wbill_tot_young
+. * mig_share_old    = 1 - (wbill_german_tot-wbill_german_young)
+. *                        / (wbill_tot_tot-wbill_tot_young)
+. * mig_share_el10   = 1 - wbill_german_experience10 / wbill_tot_experience10
+. * mig_share_ep10   = 1 - (wbill_german_tot-wbill_german_experience10)
+. *                        / (wbill_tot_tot-wbill_tot_experience10)
+. preserve
+
+.     * Construct denominator variables for old/ep10 (not directly in data)
+.     gen wbill_tot_old  = wbill_tot_tot - wbill_tot_young
+
+.     gen wbill_ger_old  = wbill_german_tot - wbill_german_young
+
+.     gen wbill_tot_ep10 = wbill_tot_tot - wbill_tot_experience10
+
+.     gen wbill_ger_ep10 = wbill_german_tot - wbill_german_experience10
+
+. 
+.     *keep if emp_tot_tot >= 10
+.     collapse (count) N_main        = mig_share           N_noindloc   = mig_share_noindloc ///
+>                      N_t           = mig_share_t          N_nt         = mig_share_nt       ///
+>                      N_exp         = mig_share_exp        N_nexp       = mig_share_nexp     ///
+>                      N_exp_nind    = mig_share_exp_nind   N_nexp_nind  = mig_share_nexp_nind ///
+>                      N_sing        = mig_share_sing       N_nfor       = mig_share_nfor     ///
+>                      N_young       = mig_share_young      N_old        = mig_share_old      ///
+>                      N_el10        = mig_share_el10       N_ep10       = mig_share_ep10     ///
+>                      N_hire        = hire_immigrant       N_ncountries = number_of_countries /// *numerator obs counts (non-missing immigrant wbill variable)
+>                      Nnum_main     = wbill_german_tot         Nden_main    = wbill_tot_tot          ///
+>                      Nnum_young    = wbill_german_young       Nden_young   = wbill_tot_young        ///
+>                      Nnum_old      = wbill_ger_old            Nden_old     = wbill_tot_old          ///
+>                      Nnum_el10     = wbill_german_experience10 Nden_el10   = wbill_tot_experience10 ///
+>                      Nnum_ep10     = wbill_ger_ep10           Nden_ep10    = wbill_tot_ep10         ///
+>              , by(decile_wbill)
+
+.     save "${data}/N_per_bin_main.dta", replace
+file /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/data/N_per_bin_main.dta saved
+
+. restore
+
+. 
+. * FDZ: Obs counts of numerator/denominator for subsample shares (t/nt, exp/nexp,
+. * sing/nfor). Each share restricts to a subsample; we count non-missing obs of
+. * the native wbill (numerator proxy) and total wbill (denominator proxy) within
+. * each subsample, by size bin.
+. preserve
+
+.     * Restrict variables to the relevant subsample so count gives subsample N
+.     gen wbill_ger_t    = wbill_german_tot if tradeable3 == 1
+(10,764 missing values generated)
+
+.     gen wbill_tot_t    = wbill_tot_tot    if tradeable3 == 1
+(10,764 missing values generated)
+
+.     gen wbill_ger_nt   = wbill_german_tot if tradeable3 == 0
+(5,043 missing values generated)
+
+.     gen wbill_tot_nt   = wbill_tot_tot    if tradeable3 == 0
+(5,043 missing values generated)
+
+.     gen wbill_ger_exp  = wbill_german_tot if exports_foreign > 0 & exports_foreign != .
+(13,180 missing values generated)
+
+.     gen wbill_tot_exp  = wbill_tot_tot    if exports_foreign > 0 & exports_foreign != .
+(13,180 missing values generated)
+
+.     gen wbill_ger_nexp = wbill_german_tot if exports_foreign == 0
+(5,727 missing values generated)
+
+.     gen wbill_tot_nexp = wbill_tot_tot    if exports_foreign == 0
+(5,727 missing values generated)
+
+.     gen wbill_ger_sing = wbill_german_tot if single_establishment == 1
+(5,802 missing values generated)
+
+.     gen wbill_tot_sing = wbill_tot_tot    if single_establishment == 1
+(5,802 missing values generated)
+
+.     gen wbill_ger_nfor = wbill_german_tot if foreign_parent == 0
+(3,254 missing values generated)
+
+.     gen wbill_tot_nfor = wbill_tot_tot    if foreign_parent == 0
+(3,254 missing values generated)
+
+.     collapse (count) Nnum_t    = wbill_ger_t    Nden_t    = wbill_tot_t    ///
+>                      Nnum_nt   = wbill_ger_nt   Nden_nt   = wbill_tot_nt   ///
+>                      Nnum_exp  = wbill_ger_exp  Nden_exp  = wbill_tot_exp  ///
+>                      Nnum_nexp = wbill_ger_nexp Nden_nexp = wbill_tot_nexp ///
+>                      Nnum_sing = wbill_ger_sing Nden_sing = wbill_tot_sing ///
+>                      Nnum_nfor = wbill_ger_nfor Nden_nfor = wbill_tot_nfor ///
+>              , by(decile_wbill)
+
+.     merge 1:1 decile_wbill using "${data}/N_per_bin_main.dta", nogenerate
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                                11  
+    -----------------------------------------
+
+.     save "${data}/N_per_bin_main.dta", replace
+file /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/data/N_per_bin_main.dta saved
+
+. restore
+
+. 
+. preserve
+
+.     collapse (median) mig_share_coll [fw=weight_survey], by(decile_wbill_coll)
+
+.     save "${data}/medians_coll.dta", replace
+file /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/data/medians_coll.dta saved
+
+. restore
+
+. 
+. preserve
+
+.     * mig_share_coll = 1 - wbill_german_college / wbill_tot_college
+.     * Count non-missing obs of numerator (wbill_german_college) and
+.     * denominator (wbill_tot_college) separately (Guidelines §4.5).
+.     *keep if emp_tot_tot >= 10
+.     collapse (count) N_coll     = mig_share_coll ///
+>                      Nnum_coll  = wbill_german_college ///
+>                      Nden_coll  = wbill_tot_college ///
+>              , by(decile_wbill_coll)
+
+.     rename decile_wbill_coll decile_wbill
+
+.     save "${data}/N_per_bin_coll.dta", replace
+file /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/data/N_per_bin_coll.dta saved
+
+. restore
+
+. 
+. preserve
+
+.     collapse (median) mig_share_ncoll [fw=weight_survey], by(decile_wbill_ncoll)
+
+.     save "${data}/medians_ncoll.dta", replace
+file /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/data/medians_ncoll.dta saved
+
+. restore
+
+. 
+. preserve
+
+.     * mig_share_ncoll = 1 - (wbill_german_tot - wbill_german_college)
+.     *                       / (wbill_tot_tot   - wbill_tot_college)
+.     * Denominator = wbill_tot_tot - wbill_tot_college; construct it so count
+.     * reflects non-missing obs on both sides (Guidelines §4.5).
+.     gen wbill_ger_ncoll = wbill_german_tot - wbill_german_college
+
+.     gen wbill_tot_ncoll = wbill_tot_tot    - wbill_tot_college
+
+.     *keep if emp_tot_tot >= 10
+.     collapse (count) N_ncoll      = mig_share_ncoll ///
+>                      Nnum_ncoll   = wbill_ger_ncoll ///
+>                      Nden_ncoll   = wbill_tot_ncoll ///
+>              , by(decile_wbill_ncoll)
+
+.     rename decile_wbill_ncoll decile_wbill
+
+.     save "${data}/N_per_bin_ncoll.dta", replace
+file /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/data/N_per_bin_ncoll.dta saved
+
+. restore
+
+. 
+. preserve
+
+.     collapse (median) med_countries  = number_of_countries ///
+>              (mean)   mean_countries = number_of_countries ///
+>              (count)  N_a6b          = number_of_countries ///
+>              [fw=weight_survey] if emp_tot_tot >= 10, by(mig_share_group)
+
+.     save "${data}/medians_a6b.dta", replace
+file /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/data/medians_a6b.dta saved
+
+. restore
+
+. 
+. keep decile_wbill decile_wbill_coll decile_wbill_ncoll                       ///
+>      tradeable3 weight_survey emp_tot_tot mig_share_group                    ///
+>      mig_share         mig_share_noindloc                                    ///
+>      mig_share_t       mig_share_nt                                          ///
+>      mig_share_exp     mig_share_nexp                                        ///
+>      mig_share_exp_nind mig_share_nexp_nind                                  ///
+>      mig_share_sing    mig_share_nfor                                        ///
+>      mig_share_young   mig_share_old                                         ///
+>      mig_share_el10    mig_share_ep10                                        ///
+>      mig_share_coll    mig_share_ncoll                                       ///
+>      hire_immigrant    number_of_countries                                   ///
+>      exports_foreign   single_establishment foreign_parent
+
+. 
+. save "${data}/descriptives_orig.dta", replace
+file /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/data/descriptives_orig.dta saved
+
+. 
+. 
+. /*------------------------------------------------------------------------------
+>   STEP 2: BOOTSTRAP — main grouping, 200 reps
+> ------------------------------------------------------------------------------*/
+. *supressing log to avoid excessive output
+. 
+. log off
+      name:  <unnamed>
+       log:  /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/log/17_empirical_facts.log
+  log type:  text
+ paused on:   9 Sep 2026, 15:57:48
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/log/17_empirical_facts.log
+  log type:  text
+resumed on:   9 Sep 2026, 15:57:57
+
+. 
+. collapse (sd) sd_mig_share         = mig_share                               ///
+>               sd_noindloc          = mig_share_noindloc                      ///
+>               sd_t                 = mig_share_t                             ///
+>               sd_nt                = mig_share_nt                            ///
+>               sd_exp               = mig_share_exp                           ///
+>               sd_nexp              = mig_share_nexp                          ///
+>               sd_exp_nind          = mig_share_exp_nind                      ///
+>               sd_nexp_nind         = mig_share_nexp_nind                     ///
+>               sd_sing              = mig_share_sing                          ///
+>               sd_nfor              = mig_share_nfor                          ///
+>               sd_young             = mig_share_young                         ///
+>               sd_old               = mig_share_old                           ///
+>               sd_el10              = mig_share_el10                          ///
+>               sd_ep10              = mig_share_ep10                          ///
+>               sd_hire              = hire_immigrant                           ///
+>               sd_ncountries        = number_of_countries                     ///
+>          , by(decile_wbill)
+
+. 
+. save "${data}/boot_sd_main.dta", replace
+file /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/data/boot_sd_main.dta saved
+
+. 
+. 
+. /*------------------------------------------------------------------------------
+>   STEP 3: BOOTSTRAP — college grouping
+> ------------------------------------------------------------------------------*/
+. *supressing log to avoid excessive output
+. 
+. 
+. 
+. use "${data}/descriptives_orig.dta", clear
+
+. 
+. log off 
+      name:  <unnamed>
+       log:  /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/log/17_empirical_facts.log
+  log type:  text
+ paused on:   9 Sep 2026, 15:57:57
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/log/17_empirical_facts.log
+  log type:  text
+resumed on:   9 Sep 2026, 15:58:03
+
+. 
+. collapse (sd) sd_coll = mig_share_coll, by(decile_wbill_coll)
+
+. rename decile_wbill_coll decile_wbill
+
+. save "${data}/boot_sd_coll.dta", replace
+file /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/data/boot_sd_coll.dta saved
+
+. 
+. 
+. /*------------------------------------------------------------------------------
+>   STEP 4: BOOTSTRAP — non-college grouping
+> ------------------------------------------------------------------------------*/
+. 
+. use "${data}/descriptives_orig.dta", clear
+
+. 
+. *supressing log to avoid excessive output
+. 
+. log off 
+      name:  <unnamed>
+       log:  /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/log/17_empirical_facts.log
+  log type:  text
+ paused on:   9 Sep 2026, 15:58:03
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/log/17_empirical_facts.log
+  log type:  text
+resumed on:   9 Sep 2026, 15:58:11
+
+. 
+. collapse (sd) sd_ncoll = mig_share_ncoll, by(decile_wbill_ncoll)
+
+. rename decile_wbill_ncoll decile_wbill
+
+. save "${data}/boot_sd_ncoll.dta", replace
+file /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/data/boot_sd_ncoll.dta saved
+
+. 
+. 
+. /*------------------------------------------------------------------------------
+>   STEP 5: MERGE POINT ESTIMATES AND SDs
+>  BUILD CI VARIABLES
+> ------------------------------------------------------------------------------*/
+. 
+. * ---- Main dataset ----------------------------------------------------------
+. use "${data}/medians_main.dta", clear
+
+. merge 1:1 decile_wbill using "${data}/boot_sd_main.dta", nogenerate
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                                11  
+    -----------------------------------------
+
+. merge 1:1 decile_wbill using "${data}/N_per_bin_main.dta", nogenerate
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                                11  
+    -----------------------------------------
+
+. 
+. gen ci_lo_mig_share     = mig_share           - 1.96 * sd_mig_share
+
+. gen ci_hi_mig_share     = mig_share           + 1.96 * sd_mig_share
+
+. gen ci_lo_noindloc      = mig_share_noindloc  - 1.96 * sd_noindloc
+
+. gen ci_hi_noindloc      = mig_share_noindloc  + 1.96 * sd_noindloc
+
+. gen ci_lo_t             = mig_share_t         - 1.96 * sd_t
+(1 missing value generated)
+
+. gen ci_hi_t             = mig_share_t         + 1.96 * sd_t
+(1 missing value generated)
+
+. gen ci_lo_nt            = mig_share_nt        - 1.96 * sd_nt
+
+. gen ci_hi_nt            = mig_share_nt        + 1.96 * sd_nt
+
+. gen ci_lo_exp           = mig_share_exp       - 1.96 * sd_exp
+
+. gen ci_hi_exp           = mig_share_exp       + 1.96 * sd_exp
+
+. gen ci_lo_nexp          = mig_share_nexp      - 1.96 * sd_nexp
+
+. gen ci_hi_nexp          = mig_share_nexp      + 1.96 * sd_nexp
+
+. gen ci_lo_exp_nind      = mig_share_exp_nind  - 1.96 * sd_exp_nind
+
+. gen ci_hi_exp_nind      = mig_share_exp_nind  + 1.96 * sd_exp_nind
+
+. gen ci_lo_nexp_nind     = mig_share_nexp_nind - 1.96 * sd_nexp_nind
+
+. gen ci_hi_nexp_nind     = mig_share_nexp_nind + 1.96 * sd_nexp_nind
+
+. gen ci_lo_sing          = mig_share_sing      - 1.96 * sd_sing
+
+. gen ci_hi_sing          = mig_share_sing      + 1.96 * sd_sing
+
+. gen ci_lo_nfor          = mig_share_nfor      - 1.96 * sd_nfor
+
+. gen ci_hi_nfor          = mig_share_nfor      + 1.96 * sd_nfor
+
+. gen ci_lo_hire          = hire_immigrant      - 1.96 * sd_hire
+
+. gen ci_hi_hire          = hire_immigrant      + 1.96 * sd_hire
+
+. gen ci_lo_el10          = mig_share_el10      - 1.96 * sd_el10
+
+. gen ci_hi_el10          = mig_share_el10      + 1.96 * sd_el10
+
+. gen ci_lo_ep10          = mig_share_ep10      - 1.96 * sd_ep10
+
+. gen ci_hi_ep10          = mig_share_ep10      + 1.96 * sd_ep10
+
+. gen ci_lo_young         = mig_share_young     - 1.96 * sd_young
+
+. gen ci_hi_young         = mig_share_young     + 1.96 * sd_young
+
+. gen ci_lo_old           = mig_share_old       - 1.96 * sd_old
+
+. gen ci_hi_old           = mig_share_old       + 1.96 * sd_old
+
+. gen ci_lo_ncountries    = number_of_countries - 1.96 * sd_ncountries
+
+. gen ci_hi_ncountries    = number_of_countries + 1.96 * sd_ncountries
+
+. 
+. * Label the size bin variable for display
+. label define bin_lbl 1 "0-10" 2 "11-20" 3 "21-30" 4 "31-50" 5 "51-70"    ///
+>     6 "71-100" 7 "101-150" 8 "151-200" 9 "201-500" 10 "+500"
+
+. label values decile_wbill bin_lbl
+
+. 
+. format mig_share* ci_lo* ci_hi* hire_immigrant number_of_countries %6.4f
+
+. 
+. save "${data}/plot_data_main.dta", replace
+file /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/data/plot_data_main.dta saved
+
+. 
+. * ---- College ---------------------------------------------------------------
+. use "${data}/medians_coll.dta", clear
+
+. rename decile_wbill_coll decile_wbill
+
+. merge 1:1 decile_wbill using "${data}/boot_sd_coll.dta", nogenerate
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                                11  
+    -----------------------------------------
+
+. merge 1:1 decile_wbill using "${data}/N_per_bin_coll.dta", nogenerate
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                                11  
+    -----------------------------------------
+
+. gen ci_lo_coll = mig_share_coll - 1.96 * sd_coll
+
+. gen ci_hi_coll = mig_share_coll + 1.96 * sd_coll
+
+. label values decile_wbill bin_lbl
+
+. format mig_share_coll ci_lo_coll ci_hi_coll %6.4f
+
+. save "${data}/plot_data_coll.dta", replace
+file /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/data/plot_data_coll.dta saved
+
+. 
+. * ---- Non-college -----------------------------------------------------------
+. use "${data}/medians_ncoll.dta", clear
+
+. rename decile_wbill_ncoll decile_wbill
+
+. merge 1:1 decile_wbill using "${data}/boot_sd_ncoll.dta", nogenerate
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                                11  
+    -----------------------------------------
+
+. merge 1:1 decile_wbill using "${data}/N_per_bin_ncoll.dta", nogenerate
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                                11  
+    -----------------------------------------
+
+. gen ci_lo_ncoll = mig_share_ncoll - 1.96 * sd_ncoll
+
+. gen ci_hi_ncoll = mig_share_ncoll + 1.96 * sd_ncoll
+
+. label values decile_wbill bin_lbl
+
+. format mig_share_ncoll ci_lo_ncoll ci_hi_ncoll %6.4f
+
+. save "${data}/plot_data_ncoll.dta", replace
+file /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/data/plot_data_ncoll.dta saved
+
+. 
+. 
+. /*==============================================================================
+>   TABLES — point estimates and 95% CIs by size bin
+>   Each table corresponds to the underlying data for one figure.
+> ==============================================================================*/
+. 
+. use "${data}/plot_data_main.dta", clear
+
+. 
+. * --------------------------------------------------------------------------
+. di ""
+
+
+. di "======================================================================"
+======================================================================
+
+. 
+. ****************************
+. * Table 3
+. * Figure 1: Median immigrant share by establishment size bin
+. ****************************
+. 
+. * Variables: mig_share (immigrant wage-bill share, 0-1),
+. *   ci_lo_mig_share / ci_hi_mig_share (95% bootstrap CI bounds),
+. *   N_main (unweighted establishment count per size bin),
+. *   decile_wbill (employment size bin, 10 categories)
+. * Selection: All sectors, 2003-2011, establishments >= 10 employees;
+. *   survey-weighted median per bin; 200 bootstrap repetitions
+. 
+. * FDZ: obs count of numerator (wbill_german_tot) and denominator (wbill_tot_tot) per bin
+. tabdisp decile_wbill, c(Nnum_main Nden_main) concise
+
+------------------------------------------------------
+decile_wb |
+ill       |            Nnum_main             Nden_main
+----------+-------------------------------------------
+     0-10 |                 5334                  5334
+    11-20 |                 3764                  3764
+    21-30 |                 1555                  1555
+    31-50 |                 2188                  2188
+    51-70 |                  687                   687
+   71-100 |                  541                   541
+  101-150 |                  391                   391
+  151-200 |                  143                   143
+  201-500 |                  155                   155
+     +500 |                   19                    19
+        . |                 1030                  1030
+------------------------------------------------------
+
+. tabdisp decile_wbill, c(N_main) concise
+
+-----------------------------
+decile_wb |
+ill       | (count) mig_share
+----------+------------------
+     0-10 |              5334
+    11-20 |              3764
+    21-30 |              1555
+    31-50 |              2188
+    51-70 |               687
+   71-100 |               541
+  101-150 |               391
+  151-200 |               143
+  201-500 |               155
+     +500 |                19
+        . |              1028
+-----------------------------
+
+. tabdisp decile_wbill, c(mig_share ci_lo_mig_share ci_hi_mig_share) concise
+
+----------------------------------------------------------------
+decile_wb |
+ill       | (p 50) mig_share   ci_lo_mig_share   ci_hi_mig_share
+----------+-----------------------------------------------------
+     0-10 |           0.0000            0.0000            0.0000
+    11-20 |           0.0000            0.0000            0.0000
+    21-30 |           0.0000            0.0000            0.0000
+    31-50 |           0.0428            0.0329            0.0526
+    51-70 |           0.0547            0.0340            0.0753
+   71-100 |           0.0692            0.0385            0.1000
+  101-150 |           0.0593            0.0394            0.0792
+  151-200 |           0.0873            0.0555            0.1191
+  201-500 |           0.0716            0.0552            0.0881
+     +500 |           0.0995            0.0733            0.1256
+        . |           0.0000            0.0000            0.0000
+----------------------------------------------------------------
+
+. 
+. * --------------------------------------------------------------------------
+. di ""
+
+
+. di "======================================================================"
+======================================================================
+
+. 
+. ****************************
+. * Table 4
+. * Figure A1(a): Controlling for industry and geography
+. ****************************
+. 
+. * Variables: mig_share (raw median), mig_share_noindloc (residualised
+. *   on 3-digit industry x year and LLM x year FEs),
+. *   ci_lo_noindloc / ci_hi_noindloc (95% bootstrap CI bounds),
+. *   N_main / N_noindloc (unweighted N per bin for each series),
+. *   decile_wbill (size bin)
+. * Selection: All sectors, 2003-2011, establishments >= 10 employees
+. 
+. * FDZ: obs count of numerator (wbill_german_tot) and denominator (wbill_tot_tot)
+. * mig_share_noindloc is a residual of mig_share; same underlying variables
+. tabdisp decile_wbill, c(Nnum_main Nden_main) concise
+
+------------------------------------------------------
+decile_wb |
+ill       |            Nnum_main             Nden_main
+----------+-------------------------------------------
+     0-10 |                 5334                  5334
+    11-20 |                 3764                  3764
+    21-30 |                 1555                  1555
+    31-50 |                 2188                  2188
+    51-70 |                  687                   687
+   71-100 |                  541                   541
+  101-150 |                  391                   391
+  151-200 |                  143                   143
+  201-500 |                  155                   155
+     +500 |                   19                    19
+        . |                 1030                  1030
+------------------------------------------------------
+
+. tabdisp decile_wbill, c(N_main N_noindloc) concise
+
+------------------------------------------------------
+decile_wb |
+ill       |    (count) mig_share            N_noindloc
+----------+-------------------------------------------
+     0-10 |                 5334                  5234
+    11-20 |                 3764                  3715
+    21-30 |                 1555                  1532
+    31-50 |                 2188                  2136
+    51-70 |                  687                   678
+   71-100 |                  541                   524
+  101-150 |                  391                   390
+  151-200 |                  143                   139
+  201-500 |                  155                   153
+     +500 |                   19                    19
+        . |                 1028                  1009
+------------------------------------------------------
+
+. tabdisp decile_wbill, c(mig_share mig_share_noindloc ci_lo_noindloc ci_hi_noindloc) concise
+
+--------------------------------------------------------------------------------------------------
+decile_wb |
+ill       |     (p 50) mig_share    mig_share_noindloc        ci_lo_noindloc        ci_hi_noindloc
+----------+---------------------------------------------------------------------------------------
+     0-10 |               0.0000               -0.0807               -0.0849               -0.0766
+    11-20 |               0.0000               -0.0628               -0.0689               -0.0566
+    21-30 |               0.0000               -0.0462               -0.0577               -0.0346
+    31-50 |               0.0428               -0.0232               -0.0336               -0.0127
+    51-70 |               0.0547               -0.0254               -0.0372               -0.0136
+   71-100 |               0.0692               -0.0084               -0.0247                0.0080
+  101-150 |               0.0593               -0.0170               -0.0282               -0.0058
+  151-200 |               0.0873               -0.0043               -0.0366                0.0280
+  201-500 |               0.0716               -0.0297               -0.0411               -0.0183
+     +500 |               0.0995               -0.0104               -0.0419                0.0210
+        . |               0.0000               -0.0442               -0.0587               -0.0297
+--------------------------------------------------------------------------------------------------
+
+. 
+. * --------------------------------------------------------------------------
+. di ""
+
+
+. di "======================================================================"
+======================================================================
+
+. 
+. ****************************
+. * Table 5
+. * Figure A1(b): Tradable vs. non-tradable sectors
+. ****************************
+. 
+. * Variables: mig_share_t (immigrant share, tradable sector),
+. *   mig_share_nt (non-tradable sector); ci_lo/hi for each;
+. *   N_t / N_nt (unweighted N per bin for each sector),
+. *   decile_wbill (size bin)
+. * Selection: 2003-2011, establishments >= 10 employees; by sector
+. 
+. * FDZ: obs count of numerator/denominator for tradable and non-tradable subsamples
+. tabdisp decile_wbill, c(Nnum_t Nden_t) concise
+
+----------------------------------------------------
+decile_wb |
+ill       | (count) wbill_ger_t  (count) wbill_tot_t
+----------+-----------------------------------------
+     0-10 |                1490                 1490
+    11-20 |                1160                 1160
+    21-30 |                 494                  494
+    31-50 |                1060                 1060
+    51-70 |                 209                  209
+   71-100 |                 140                  140
+  101-150 |                  94                   94
+  151-200 |                  20                   20
+  201-500 |                  39                   39
+     +500 |                   0                    0
+        . |                 337                  337
+----------------------------------------------------
+
+. tabdisp decile_wbill, c(Nnum_nt Nden_nt) concise
+
+------------------------------------------------------
+decile_wb |
+ill       | (count) wbill_ger_nt  (count) wbill_tot_nt
+----------+-------------------------------------------
+     0-10 |                 3844                  3844
+    11-20 |                 2604                  2604
+    21-30 |                 1061                  1061
+    31-50 |                 1128                  1128
+    51-70 |                  478                   478
+   71-100 |                  401                   401
+  101-150 |                  297                   297
+  151-200 |                  123                   123
+  201-500 |                  116                   116
+     +500 |                   19                    19
+        . |                  693                   693
+------------------------------------------------------
+
+. tabdisp decile_wbill, c(N_t N_nt) concise
+
+------------------------------------------------------
+decile_wb |
+ill       |  (count) mig_share_t  (count) mig_share_nt
+----------+-------------------------------------------
+     0-10 |                 1490                  3844
+    11-20 |                 1160                  2604
+    21-30 |                  494                  1061
+    31-50 |                 1060                  1128
+    51-70 |                  209                   478
+   71-100 |                  140                   401
+  101-150 |                   94                   297
+  151-200 |                   20                   123
+  201-500 |                   39                   116
+     +500 |                    0                    19
+        . |                  336                   692
+------------------------------------------------------
+
+. tabdisp decile_wbill, c(mig_share_t ci_lo_t ci_hi_t) concise
+
+----------------------------------------------------------------------
+decile_wb |
+ill       | (p 50) mig_share_t             ci_lo_t             ci_hi_t
+----------+-----------------------------------------------------------
+     0-10 |             0.0000              0.0000              0.0000
+    11-20 |             0.0000              0.0000              0.0000
+    21-30 |             0.0000             -0.0067              0.0067
+    31-50 |             0.0625              0.0510              0.0740
+    51-70 |             0.0645              0.0320              0.0971
+   71-100 |             0.0675              0.0270              0.1080
+  101-150 |             0.0686              0.0282              0.1091
+  151-200 |             0.1136              0.0038              0.2234
+  201-500 |             0.0584              0.0173              0.0994
+        . |             0.0000              0.0000              0.0000
+----------------------------------------------------------------------
+
+. tabdisp decile_wbill, c(mig_share_nt ci_lo_nt ci_hi_nt) concise
+
+-------------------------------------------------------------------------
+decile_wb |
+ill       | (p 50) mig_share_nt             ci_lo_nt             ci_hi_nt
+----------+--------------------------------------------------------------
+     0-10 |              0.0000               0.0000               0.0000
+    11-20 |              0.0000               0.0000               0.0000
+    21-30 |              0.0000               0.0000               0.0000
+    31-50 |              0.0026              -0.0118               0.0170
+    51-70 |              0.0535               0.0285               0.0784
+   71-100 |              0.0696               0.0266               0.1126
+  101-150 |              0.0569               0.0333               0.0805
+  151-200 |              0.0873               0.0556               0.1190
+  201-500 |              0.0736               0.0579               0.0893
+     +500 |              0.0995               0.0733               0.1256
+        . |              0.0000               0.0000               0.0000
+-------------------------------------------------------------------------
+
+. 
+. * --------------------------------------------------------------------------
+. di ""
+
+
+. di "======================================================================"
+======================================================================
+
+. 
+. ****************************
+. * Table 6
+. * Figure A1(c): Exporter vs. non-exporter
+. ****************************
+. 
+. * Variables: mig_share_exp (immigrant share, exports_foreign > 0),
+. *   mig_share_nexp (exports_foreign == 0); ci_lo/hi for each;
+. *   N_exp / N_nexp (unweighted N per bin for each group),
+. *   decile_wbill (size bin)
+. * Selection: 2003-2011, establishments >= 10 employees
+. 
+. * FDZ: obs count of numerator/denominator for exporter and non-exporter subsamples
+. tabdisp decile_wbill, c(Nnum_exp Nden_exp) concise
+
+------------------------------------------------------
+decile_wb |
+ill       |             Nnum_exp              Nden_exp
+----------+-------------------------------------------
+     0-10 |                  738                   738
+    11-20 |                  628                   628
+    21-30 |                  310                   310
+    31-50 |                  403                   403
+    51-70 |                  137                   137
+   71-100 |                  103                   103
+  101-150 |                   84                    84
+  151-200 |                   38                    38
+  201-500 |                   30                    30
+     +500 |                    4                     4
+        . |                  152                   152
+------------------------------------------------------
+
+. tabdisp decile_wbill, c(Nnum_nexp Nden_nexp) concise
+
+------------------------------------------------------
+decile_wb |
+ill       |            Nnum_nexp             Nden_nexp
+----------+-------------------------------------------
+     0-10 |                 2996                  2996
+    11-20 |                 2403                  2403
+    21-30 |                 1046                  1046
+    31-50 |                 1601                  1601
+    51-70 |                  498                   498
+   71-100 |                  406                   406
+  101-150 |                  289                   289
+  151-200 |                   98                    98
+  201-500 |                  121                   121
+     +500 |                   15                    15
+        . |                  607                   607
+------------------------------------------------------
+
+. tabdisp decile_wbill, c(N_exp N_nexp) concise
+
+------------------------------------------------------
+decile_wb |
+ill       |                N_exp                N_nexp
+----------+-------------------------------------------
+     0-10 |                  738                  2996
+    11-20 |                  628                  2403
+    21-30 |                  310                  1046
+    31-50 |                  403                  1601
+    51-70 |                  137                   498
+   71-100 |                  103                   406
+  101-150 |                   84                   289
+  151-200 |                   38                    98
+  201-500 |                   30                   121
+     +500 |                    4                    15
+        . |                  152                   606
+------------------------------------------------------
+
+. tabdisp decile_wbill, c(mig_share_exp ci_lo_exp ci_hi_exp) concise
+
+----------------------------------------------------------------------------
+decile_wb |
+ill       | (p 50) mig_share_exp             ci_lo_exp             ci_hi_exp
+----------+-----------------------------------------------------------------
+     0-10 |               0.0000                0.0000                0.0000
+    11-20 |               0.0000                0.0000                0.0000
+    21-30 |               0.0000                0.0000                0.0000
+    31-50 |               0.0395                0.0135                0.0654
+    51-70 |               0.0514               -0.0161                0.1190
+   71-100 |               0.1011                0.0647                0.1374
+  101-150 |               0.0469                0.0128                0.0809
+  151-200 |               0.1020                0.0634                0.1405
+  201-500 |               0.0664                0.0407                0.0920
+     +500 |               0.1327                0.0323                0.2331
+        . |               0.0000                0.0000                0.0000
+----------------------------------------------------------------------------
+
+. tabdisp decile_wbill, c(mig_share_nexp ci_lo_nexp ci_hi_nexp) concise
+
+----------------------------------------------------------------------------
+decile_wb |
+ill       |       mig_share_nexp            ci_lo_nexp            ci_hi_nexp
+----------+-----------------------------------------------------------------
+     0-10 |               0.0000                0.0000                0.0000
+    11-20 |               0.0000                0.0000                0.0000
+    21-30 |               0.0000                0.0000                0.0000
+    31-50 |               0.0419                0.0312                0.0527
+    51-70 |               0.0562                0.0342                0.0781
+   71-100 |               0.0643                0.0300                0.0986
+  101-150 |               0.0623                0.0377                0.0869
+  151-200 |               0.0825                0.0409                0.1240
+  201-500 |               0.0779                0.0556                0.1002
+     +500 |               0.0968                0.0755                0.1180
+        . |               0.0000                0.0000                0.0000
+----------------------------------------------------------------------------
+
+. 
+. * --------------------------------------------------------------------------
+. di ""
+
+
+. di "======================================================================"
+======================================================================
+
+. 
+. ****************************
+. * Table 7
+. * Figure A1(d): Exporter vs. non-exporter, residualised
+. ****************************
+. 
+. * Variables: mig_share_exp_nind / mig_share_nexp_nind (immigrant share
+. *   residualised on industry x year and LLM x year FEs, by exporter status);
+. *   ci_lo/hi for each; N_exp_nind / N_nexp_nind (unweighted N per bin),
+. *   decile_wbill (size bin)
+. * Selection: 2003-2011, establishments >= 10 employees
+. 
+. * FDZ: residualised shares use same subsample as exp/nexp; same obs counts apply
+. tabdisp decile_wbill, c(Nnum_exp Nden_exp) concise
+
+------------------------------------------------------
+decile_wb |
+ill       |             Nnum_exp              Nden_exp
+----------+-------------------------------------------
+     0-10 |                  738                   738
+    11-20 |                  628                   628
+    21-30 |                  310                   310
+    31-50 |                  403                   403
+    51-70 |                  137                   137
+   71-100 |                  103                   103
+  101-150 |                   84                    84
+  151-200 |                   38                    38
+  201-500 |                   30                    30
+     +500 |                    4                     4
+        . |                  152                   152
+------------------------------------------------------
+
+. tabdisp decile_wbill, c(Nnum_nexp Nden_nexp) concise
+
+------------------------------------------------------
+decile_wb |
+ill       |            Nnum_nexp             Nden_nexp
+----------+-------------------------------------------
+     0-10 |                 2996                  2996
+    11-20 |                 2403                  2403
+    21-30 |                 1046                  1046
+    31-50 |                 1601                  1601
+    51-70 |                  498                   498
+   71-100 |                  406                   406
+  101-150 |                  289                   289
+  151-200 |                   98                    98
+  201-500 |                  121                   121
+     +500 |                   15                    15
+        . |                  607                   607
+------------------------------------------------------
+
+. tabdisp decile_wbill, c(N_exp_nind N_nexp_nind) concise
+
+------------------------------------------------------
+decile_wb |
+ill       |           N_exp_nind           N_nexp_nind
+----------+-------------------------------------------
+     0-10 |                  722                  2936
+    11-20 |                  618                  2375
+    21-30 |                  301                  1033
+    31-50 |                  396                  1558
+    51-70 |                  131                   495
+   71-100 |                  100                   394
+  101-150 |                   84                   288
+  151-200 |                   35                    98
+  201-500 |                   29                   120
+     +500 |                    4                    15
+        . |                  148                   594
+------------------------------------------------------
+
+. tabdisp decile_wbill, c(mig_share_exp_nind ci_lo_exp_nind ci_hi_exp_nind) concise
+
+----------------------------------------------------------------------------
+decile_wb |
+ill       |   mig_share_exp_nind        ci_lo_exp_nind        ci_hi_exp_nind
+----------+-----------------------------------------------------------------
+     0-10 |              -0.0779               -0.0880               -0.0679
+    11-20 |              -0.0702               -0.0824               -0.0581
+    21-30 |              -0.0565               -0.0717               -0.0413
+    31-50 |              -0.0440               -0.0669               -0.0212
+    51-70 |              -0.0282               -0.0585                0.0021
+   71-100 |               0.0101               -0.0168                0.0369
+  101-150 |              -0.0197               -0.0487                0.0093
+  151-200 |               0.0150               -0.0374                0.0674
+  201-500 |              -0.0349               -0.0803                0.0106
+     +500 |              -0.0503               -0.1745                0.0739
+        . |              -0.0646               -0.0857               -0.0435
+----------------------------------------------------------------------------
+
+. tabdisp decile_wbill, c(mig_share_nexp_nind ci_lo_nexp_nind ci_hi_nexp_nind) concise
+
+----------------------------------------------------------------------------
+decile_wb |
+ill       |  mig_share_nexp_nind       ci_lo_nexp_nind       ci_hi_nexp_nind
+----------+-----------------------------------------------------------------
+     0-10 |              -0.0809               -0.0856               -0.0763
+    11-20 |              -0.0615               -0.0692               -0.0538
+    21-30 |              -0.0418               -0.0550               -0.0286
+    31-50 |              -0.0185               -0.0292               -0.0079
+    51-70 |              -0.0222               -0.0385               -0.0059
+   71-100 |              -0.0095               -0.0297                0.0107
+  101-150 |              -0.0119               -0.0293                0.0055
+  151-200 |              -0.0171               -0.0522                0.0180
+  201-500 |              -0.0290               -0.0417               -0.0163
+     +500 |              -0.0104               -0.0422                0.0213
+        . |              -0.0411               -0.0556               -0.0267
+----------------------------------------------------------------------------
+
+. 
+. * --------------------------------------------------------------------------
+. di ""
+
+
+. di "======================================================================"
+======================================================================
+
+. 
+. ****************************
+. * Table 9
+. * Figure A2(b): Single-establishment and German-owned firms
+. ****************************
+. 
+. * Variables: mig_share (baseline), mig_share_sing (single_establishment == 1),
+. *   mig_share_nfor (foreign_parent == 0); ci_lo/hi for each;
+. *   N_main / N_sing / N_nfor (unweighted N per bin for each series),
+. *   decile_wbill (size bin)
+. * Selection: 2003-2011, establishments >= 10 employees
+. 
+. * FDZ: obs count of numerator/denominator for each subsample
+. tabdisp decile_wbill, c(Nnum_main Nden_main) concise
+
+------------------------------------------------------
+decile_wb |
+ill       |            Nnum_main             Nden_main
+----------+-------------------------------------------
+     0-10 |                 5334                  5334
+    11-20 |                 3764                  3764
+    21-30 |                 1555                  1555
+    31-50 |                 2188                  2188
+    51-70 |                  687                   687
+   71-100 |                  541                   541
+  101-150 |                  391                   391
+  151-200 |                  143                   143
+  201-500 |                  155                   155
+     +500 |                   19                    19
+        . |                 1030                  1030
+------------------------------------------------------
+
+. tabdisp decile_wbill, c(Nnum_sing Nden_sing) concise
+
+------------------------------------------------------
+decile_wb |
+ill       |            Nnum_sing             Nden_sing
+----------+-------------------------------------------
+     0-10 |                 2977                  2977
+    11-20 |                 2402                  2402
+    21-30 |                 1050                  1050
+    31-50 |                 1573                  1573
+    51-70 |                  499                   499
+   71-100 |                  391                   391
+  101-150 |                  286                   286
+  151-200 |                   96                    96
+  201-500 |                  123                   123
+     +500 |                   13                    13
+        . |                  595                   595
+------------------------------------------------------
+
+. tabdisp decile_wbill, c(Nnum_nfor Nden_nfor) concise
+
+------------------------------------------------------
+decile_wb |
+ill       |            Nnum_nfor             Nden_nfor
+----------+-------------------------------------------
+     0-10 |                 3755                  3755
+    11-20 |                 2981                  2981
+    21-30 |                 1319                  1319
+    31-50 |                 1982                  1982
+    51-70 |                  617                   617
+   71-100 |                  484                   484
+  101-150 |                  364                   364
+  151-200 |                  131                   131
+  201-500 |                  148                   148
+     +500 |                   16                    16
+        . |                  756                   756
+------------------------------------------------------
+
+. tabdisp decile_wbill, c(N_main N_sing N_nfor) concise
+
+----------------------------------------------------------------------------
+decile_wb |
+ill       |    (count) mig_share                N_sing                N_nfor
+----------+-----------------------------------------------------------------
+     0-10 |                 5334                  2977                  3755
+    11-20 |                 3764                  2402                  2981
+    21-30 |                 1555                  1050                  1319
+    31-50 |                 2188                  1573                  1982
+    51-70 |                  687                   499                   617
+   71-100 |                  541                   391                   484
+  101-150 |                  391                   286                   364
+  151-200 |                  143                    96                   131
+  201-500 |                  155                   123                   148
+     +500 |                   19                    13                    16
+        . |                 1028                   594                   755
+----------------------------------------------------------------------------
+
+. tabdisp decile_wbill, c(mig_share ci_lo_mig_share ci_hi_mig_share) concise
+
+----------------------------------------------------------------
+decile_wb |
+ill       | (p 50) mig_share   ci_lo_mig_share   ci_hi_mig_share
+----------+-----------------------------------------------------
+     0-10 |           0.0000            0.0000            0.0000
+    11-20 |           0.0000            0.0000            0.0000
+    21-30 |           0.0000            0.0000            0.0000
+    31-50 |           0.0428            0.0329            0.0526
+    51-70 |           0.0547            0.0340            0.0753
+   71-100 |           0.0692            0.0385            0.1000
+  101-150 |           0.0593            0.0394            0.0792
+  151-200 |           0.0873            0.0555            0.1191
+  201-500 |           0.0716            0.0552            0.0881
+     +500 |           0.0995            0.0733            0.1256
+        . |           0.0000            0.0000            0.0000
+----------------------------------------------------------------
+
+. tabdisp decile_wbill, c(mig_share_sing ci_lo_sing ci_hi_sing) concise
+
+----------------------------------------------------------------------------
+decile_wb |
+ill       |       mig_share_sing            ci_lo_sing            ci_hi_sing
+----------+-----------------------------------------------------------------
+     0-10 |               0.0000                0.0000                0.0000
+    11-20 |               0.0000                0.0000                0.0000
+    21-30 |               0.0000                0.0000                0.0000
+    31-50 |               0.0407                0.0287                0.0527
+    51-70 |               0.0535                0.0309                0.0760
+   71-100 |               0.0707                0.0344                0.1070
+  101-150 |               0.0590                0.0344                0.0836
+  151-200 |               0.0842                0.0508                0.1177
+  201-500 |               0.0779                0.0565                0.0994
+     +500 |               0.1153                0.0784                0.1522
+        . |               0.0000                0.0000                0.0000
+----------------------------------------------------------------------------
+
+. tabdisp decile_wbill, c(mig_share_nfor ci_lo_nfor ci_hi_nfor) concise
+
+----------------------------------------------------------------------------
+decile_wb |
+ill       |       mig_share_nfor            ci_lo_nfor            ci_hi_nfor
+----------+-----------------------------------------------------------------
+     0-10 |               0.0000                0.0000                0.0000
+    11-20 |               0.0000                0.0000                0.0000
+    21-30 |               0.0000                0.0000                0.0000
+    31-50 |               0.0419                0.0319                0.0520
+    51-70 |               0.0578                0.0362                0.0794
+   71-100 |               0.0634                0.0325                0.0943
+  101-150 |               0.0590                0.0384                0.0796
+  151-200 |               0.0919                0.0574                0.1265
+  201-500 |               0.0736                0.0576                0.0897
+     +500 |               0.0995                0.0666                0.1323
+        . |               0.0000                0.0000                0.0000
+----------------------------------------------------------------------------
+
+. 
+. * --------------------------------------------------------------------------
+. di ""
+
+
+. di "======================================================================"
+======================================================================
+
+. 
+. ****************************
+. * Table 10
+. * Figure A3: Extensive margin of hiring
+. ****************************
+. 
+. * Variables: hire_immigrant (=1 if mig_share > 0, i.e. establishment
+. *   hires at least one immigrant); ci_lo_hire / ci_hi_hire;
+. *   N_hire (unweighted N per bin), decile_wbill (size bin)
+. * Selection: 2003-2011, establishments >= 10 employees;
+. *   survey-weighted mean per bin
+. * NOTE: hire_immigrant is a dummy variable. N_hire is reported alongside
+. *   the mean so FDZ can verify both categories (0/1) have >= 20 obs.
+. 
+. tabdisp decile_wbill, c(N_hire) concise
+
+--------------------------------
+decile_wb |
+ill       |               N_hire
+----------+---------------------
+     0-10 |                 5334
+    11-20 |                 3764
+    21-30 |                 1555
+    31-50 |                 2188
+    51-70 |                  687
+   71-100 |                  541
+  101-150 |                  391
+  151-200 |                  143
+  201-500 |                  155
+     +500 |                   19
+        . |                 1030
+--------------------------------
+
+. tabdisp decile_wbill, c(hire_immigrant ci_lo_hire ci_hi_hire) concise
+
+----------------------------------------------------------------------------
+decile_wb |
+ill       |       hire_immigrant            ci_lo_hire            ci_hi_hire
+----------+-----------------------------------------------------------------
+     0-10 |               0.1420                0.1275                0.1566
+    11-20 |               0.3005                0.2729                0.3280
+    21-30 |               0.4005                0.3624                0.4386
+    31-50 |               0.6207                0.5907                0.6508
+    51-70 |               0.7022                0.6533                0.7512
+   71-100 |               0.7206                0.6481                0.7931
+  101-150 |               0.8229                0.7742                0.8716
+  151-200 |               0.8917                0.8400                0.9433
+  201-500 |               0.9668                0.9366                0.9969
+     +500 |               1.0000                1.0000                1.0000
+        . |               0.3339                0.2859                0.3820
+----------------------------------------------------------------------------
+
+. 
+. * --------------------------------------------------------------------------
+. di ""
+
+
+. di "======================================================================"
+======================================================================
+
+. 
+. ****************************
+. * Table 11
+. * Figure A4(a): By tenure — more vs. less than 10 years experience
+. ****************************
+. 
+. * Variables: mig_share_ep10 (immigrant share, workers with > 10 years
+. *   experience in the labour market), mig_share_el10 (<= 10 years);
+. *   ci_lo/hi for each; N_ep10 / N_el10 (unweighted N per bin),
+. *   decile_wbill (size bin)
+. * Selection: 2003-2011, establishments >= 10 employees
+. 
+. di "  ep10 = more than 10 years experience;  el10 = less than 10 years"
+  ep10 = more than 10 years experience;  el10 = less than 10 years
+
+. di "======================================================================"
+======================================================================
+
+. * FDZ: obs count of numerator/denominator for each tenure subgroup
+. tabdisp decile_wbill, c(Nnum_ep10 Nden_ep10) concise
+
+------------------------------------------------------
+decile_wb |
+ill       |            Nnum_ep10             Nden_ep10
+----------+-------------------------------------------
+     0-10 |                 5334                  5334
+    11-20 |                 3764                  3764
+    21-30 |                 1555                  1555
+    31-50 |                 2188                  2188
+    51-70 |                  687                   687
+   71-100 |                  541                   541
+  101-150 |                  391                   391
+  151-200 |                  143                   143
+  201-500 |                  155                   155
+     +500 |                   19                    19
+        . |                 1030                  1030
+------------------------------------------------------
+
+. tabdisp decile_wbill, c(Nnum_el10 Nden_el10) concise
+
+------------------------------------------------------
+decile_wb |
+ill       |            Nnum_el10             Nden_el10
+----------+-------------------------------------------
+     0-10 |                 5334                  5334
+    11-20 |                 3764                  3764
+    21-30 |                 1555                  1555
+    31-50 |                 2188                  2188
+    51-70 |                  687                   687
+   71-100 |                  541                   541
+  101-150 |                  391                   391
+  151-200 |                  143                   143
+  201-500 |                  155                   155
+     +500 |                   19                    19
+        . |                 1030                  1030
+------------------------------------------------------
+
+. tabdisp decile_wbill, c(N_ep10 N_el10) concise
+
+------------------------------------------------------
+decile_wb |
+ill       |               N_ep10                N_el10
+----------+-------------------------------------------
+     0-10 |                 2083                  4180
+    11-20 |                 2231                  3478
+    21-30 |                 1064                  1491
+    31-50 |                 1209                  2167
+    51-70 |                  634                   686
+   71-100 |                  510                   541
+  101-150 |                  374                   391
+  151-200 |                  137                   143
+  201-500 |                  139                   155
+     +500 |                   19                    19
+        . |                  522                   934
+------------------------------------------------------
+
+. tabdisp decile_wbill, c(mig_share_ep10 ci_lo_ep10 ci_hi_ep10) concise
+
+----------------------------------------------------------------------------
+decile_wb |
+ill       |       mig_share_ep10            ci_lo_ep10            ci_hi_ep10
+----------+-----------------------------------------------------------------
+     0-10 |               0.0000                0.0000                0.0000
+    11-20 |               0.0000                0.0000                0.0000
+    21-30 |               0.0000                0.0000                0.0000
+    31-50 |               0.0000                0.0000                0.0000
+    51-70 |               0.0000               -0.0000                0.0000
+   71-100 |               0.0000               -0.0000                0.0000
+  101-150 |               0.0000               -0.0000                0.0000
+  151-200 |               0.0000               -0.0000                0.0000
+  201-500 |               0.0200               -0.0076                0.0476
+     +500 |               0.1199                0.0632                0.1767
+        . |               0.0000                0.0000                0.0000
+----------------------------------------------------------------------------
+
+. tabdisp decile_wbill, c(mig_share_el10 ci_lo_el10 ci_hi_el10) concise
+
+----------------------------------------------------------------------------
+decile_wb |
+ill       |       mig_share_el10            ci_lo_el10            ci_hi_el10
+----------+-----------------------------------------------------------------
+     0-10 |               0.0000                0.0000                0.0000
+    11-20 |               0.0000                0.0000                0.0000
+    21-30 |               0.0000                0.0000                0.0000
+    31-50 |               0.0153               -0.0004                0.0311
+    51-70 |               0.0165               -0.0031                0.0361
+   71-100 |               0.0392                0.0003                0.0781
+  101-150 |               0.0468                0.0295                0.0642
+  151-200 |               0.0891                0.0551                0.1230
+  201-500 |               0.0752                0.0564                0.0941
+     +500 |               0.0888                0.0482                0.1293
+        . |               0.0000                0.0000                0.0000
+----------------------------------------------------------------------------
+
+. 
+. * --------------------------------------------------------------------------
+. di ""
+
+
+. di "======================================================================"
+======================================================================
+
+. 
+. ****************************
+. * Table 12
+. * Figure A4(b): By age — young (< 40) vs. old (>= 40)
+. ****************************
+. 
+. * Variables: mig_share_young (immigrant share, workers aged < 40),
+. *   mig_share_old (aged >= 40); ci_lo/hi for each;
+. *   N_young / N_old (unweighted N per bin), decile_wbill (size bin)
+. * Selection: 2003-2011, establishments >= 10 employees
+. 
+. * FDZ: obs count of numerator/denominator for each age subgroup
+. tabdisp decile_wbill, c(Nnum_young Nden_young) concise
+
+------------------------------------------------------
+decile_wb |
+ill       |           Nnum_young            Nden_young
+----------+-------------------------------------------
+     0-10 |                 5334                  5334
+    11-20 |                 3764                  3764
+    21-30 |                 1555                  1555
+    31-50 |                 2188                  2188
+    51-70 |                  687                   687
+   71-100 |                  541                   541
+  101-150 |                  391                   391
+  151-200 |                  143                   143
+  201-500 |                  155                   155
+     +500 |                   19                    19
+        . |                 1030                  1030
+------------------------------------------------------
+
+. tabdisp decile_wbill, c(Nnum_old Nden_old) concise
+
+------------------------------------------------------
+decile_wb |
+ill       |             Nnum_old              Nden_old
+----------+-------------------------------------------
+     0-10 |                 5334                  5334
+    11-20 |                 3764                  3764
+    21-30 |                 1555                  1555
+    31-50 |                 2188                  2188
+    51-70 |                  687                   687
+   71-100 |                  541                   541
+  101-150 |                  391                   391
+  151-200 |                  143                   143
+  201-500 |                  155                   155
+     +500 |                   19                    19
+        . |                 1030                  1030
+------------------------------------------------------
+
+. tabdisp decile_wbill, c(N_young N_old) concise
+
+------------------------------------------------------
+decile_wb |
+ill       |              N_young                 N_old
+----------+-------------------------------------------
+     0-10 |                 4242                  2171
+    11-20 |                 3567                  2431
+    21-30 |                 1541                  1169
+    31-50 |                 2185                  2031
+    51-70 |                  687                   653
+   71-100 |                  541                   534
+  101-150 |                  391                   391
+  151-200 |                  143                   143
+  201-500 |                  155                   155
+     +500 |                   19                    19
+        . |                  909                   651
+------------------------------------------------------
+
+. tabdisp decile_wbill, c(mig_share_young ci_lo_young ci_hi_young) concise
+
+----------------------------------------------------------------------------
+decile_wb |
+ill       |      mig_share_young           ci_lo_young           ci_hi_young
+----------+-----------------------------------------------------------------
+     0-10 |               0.0000                0.0000                0.0000
+    11-20 |               0.0000                0.0000                0.0000
+    21-30 |               0.0000                0.0000                0.0000
+    31-50 |               0.0000               -0.0048                0.0048
+    51-70 |               0.0175                0.0023                0.0328
+   71-100 |               0.0246               -0.0067                0.0559
+  101-150 |               0.0364                0.0122                0.0605
+  151-200 |               0.0769                0.0428                0.1110
+  201-500 |               0.0737                0.0627                0.0848
+     +500 |               0.0993                0.0802                0.1185
+        . |               0.0000                0.0000                0.0000
+----------------------------------------------------------------------------
+
+. tabdisp decile_wbill, c(mig_share_old ci_lo_old ci_hi_old) concise
+
+----------------------------------------------------------------------------
+decile_wb |
+ill       | (p 50) mig_share_old             ci_lo_old             ci_hi_old
+----------+-----------------------------------------------------------------
+     0-10 |               0.0000                0.0000                0.0000
+    11-20 |               0.0000                0.0000                0.0000
+    21-30 |               0.0000                0.0000                0.0000
+    31-50 |               0.0000                0.0000                0.0000
+    51-70 |               0.0000               -0.0000                0.0000
+   71-100 |               0.0000               -0.0000                0.0000
+  101-150 |               0.0000               -0.0015                0.0015
+  151-200 |               0.0066               -0.0143                0.0274
+  201-500 |               0.0093               -0.0064                0.0249
+     +500 |               0.0997                0.0533                0.1462
+        . |               0.0000                0.0000                0.0000
+----------------------------------------------------------------------------
+
+. 
+. * --------------------------------------------------------------------------
+. di ""
+
+
+. di "======================================================================"
+======================================================================
+
+. 
+. ****************************
+. * Table 13
+. * Figure A6(a): Number of origin regions sourced from, by size bin
+. ****************************
+. 
+. * Variables: number_of_countries (count of origin regions with positive
+. *   immigrant wage bill, 0-9); ci_lo_ncountries / ci_hi_ncountries;
+. *   N_ncountries (unweighted N per bin), decile_wbill (size bin)
+. * Selection: 2003-2011, establishments >= 10 employees;
+. *   survey-weighted mean per bin
+. 
+. tabdisp decile_wbill, c(N_ncountries) concise
+
+--------------------------------
+decile_wb |
+ill       |         N_ncountries
+----------+---------------------
+     0-10 |                 5334
+    11-20 |                 3764
+    21-30 |                 1555
+    31-50 |                 2188
+    51-70 |                  687
+   71-100 |                  541
+  101-150 |                  391
+  151-200 |                  143
+  201-500 |                  155
+     +500 |                   19
+        . |                 1030
+--------------------------------
+
+. tabdisp decile_wbill, c(number_of_countries ci_lo_ncountries ci_hi_ncountries) concise
+
+----------------------------------------------------------------------------
+decile_wb |
+ill       |  number_of_countries      ci_lo_ncountries      ci_hi_ncountries
+----------+-----------------------------------------------------------------
+     0-10 |               0.7334                0.6539                0.8130
+    11-20 |               1.5675                1.3979                1.7372
+    21-30 |               2.3483                2.0972                2.5994
+    31-50 |               2.8777                2.6853                3.0700
+    51-70 |               4.8902                4.5115                5.2688
+   71-100 |               5.4037                4.8437                5.9636
+  101-150 |               6.4398                6.0304                6.8491
+  151-200 |               7.0795                6.5916                7.5673
+  201-500 |               8.2084                7.9038                8.5130
+     +500 |               9.0000                9.0000                9.0000
+        . |               1.8473                1.5678                2.1268
+----------------------------------------------------------------------------
+
+. 
+. 
+. * --------------------------------------------------------------------------
+. di ""
+
+
+. di "======================================================================"
+======================================================================
+
+. di "FIGURE A2(a): College vs. non-college"
+FIGURE A2(a): College vs. non-college
+
+. di "======================================================================"
+======================================================================
+
+. 
+. ****************************
+. * Table 8
+. * Figure A2(a): College vs. non-college sub-groups
+. ****************************
+. 
+. * Variables: mig_share_coll (immigrant share of college wage bill),
+. *   mig_share_ncoll (non-college wage bill); ci_lo/hi for each;
+. *   N_coll / N_ncoll (unweighted N per bin for each sub-group),
+. *   decile_wbill (size bins defined separately per sub-group)
+. * Selection: 2003-2011, establishments >= 10 employees
+. 
+. use "${data}/plot_data_coll.dta", clear
+
+. merge 1:1 decile_wbill using "${data}/plot_data_ncoll.dta", nogenerate
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                                11  
+    -----------------------------------------
+
+. 
+. * FDZ: obs count of numerator/denominator for college and non-college subgroups
+. tabdisp decile_wbill, c(Nnum_coll Nden_coll) concise
+
+------------------------------------------------------
+decile_wb |
+ill       |            Nnum_coll             Nden_coll
+----------+-------------------------------------------
+        1 |                 4311                  4311
+        2 |                  788                   788
+        3 |                  208                   208
+        4 |                   67                    67
+        5 |                   28                    28
+        6 |                   22                    22
+        7 |                    5                     5
+        8 |                    8                     8
+        9 |                    3                     3
+       10 |                    2                     2
+        . |                10365                 10365
+------------------------------------------------------
+
+. tabdisp decile_wbill, c(Nnum_ncoll Nden_ncoll) concise
+
+------------------------------------------------------
+decile_wb |
+ill       |           Nnum_ncoll            Nden_ncoll
+----------+-------------------------------------------
+        1 |                 5758                  5758
+        2 |                 3483                  3483
+        3 |                 1462                  1462
+        4 |                  979                   979
+        5 |                  950                   950
+        6 |                  633                   633
+        7 |                  339                   339
+        8 |                  201                   201
+        9 |                  227                   227
+       10 |                  254                   254
+        . |                 1521                  1521
+------------------------------------------------------
+
+. tabdisp decile_wbill, c(N_coll N_ncoll) concise
+
+------------------------------------------------------
+decile_wb |
+ill       |               N_coll               N_ncoll
+----------+-------------------------------------------
+        1 |                 4311                  5758
+        2 |                  788                  3483
+        3 |                  208                  1462
+        4 |                   67                   979
+        5 |                   28                   950
+        6 |                   22                   633
+        7 |                    5                   339
+        8 |                    8                   201
+        9 |                    3                   227
+       10 |                    2                   254
+        . |                  410                  1117
+------------------------------------------------------
+
+. tabdisp decile_wbill, c(mig_share_coll ci_lo_coll ci_hi_coll) concise
+
+----------------------------------------------------------------------------
+decile_wb |
+ill       |       mig_share_coll            ci_lo_coll            ci_hi_coll
+----------+-----------------------------------------------------------------
+        1 |               0.0000                0.0000                0.0000
+        2 |               0.0000                0.0000                0.0000
+        3 |               0.0000                0.0000                0.0000
+        4 |               0.0000                0.0000                0.0000
+        5 |               0.0246               -0.0753                0.1244
+        6 |               0.0000               -0.1484                0.1484
+        7 |               0.0537               -0.0030                0.1104
+        8 |               0.1499                0.0568                0.2430
+        9 |               0.1792               -0.0250                0.3835
+       10 |               0.2042                0.1358                0.2726
+        . |               0.0000                0.0000                0.0000
+----------------------------------------------------------------------------
+
+. tabdisp decile_wbill, c(mig_share_ncoll ci_lo_ncoll ci_hi_ncoll) concise
+
+----------------------------------------------------------------------------
+decile_wb |
+ill       |      mig_share_ncoll           ci_lo_ncoll           ci_hi_ncoll
+----------+-----------------------------------------------------------------
+        1 |               0.0000                0.0000                0.0000
+        2 |               0.0000                0.0000                0.0000
+        3 |               0.0000                0.0000                0.0000
+        4 |               0.0135               -0.0041                0.0312
+        5 |               0.0643                0.0500                0.0786
+        6 |               0.0433                0.0193                0.0673
+        7 |               0.0388                0.0132                0.0644
+        8 |               0.0496                0.0144                0.0848
+        9 |               0.0627                0.0410                0.0843
+       10 |               0.0771                0.0641                0.0901
+        . |               0.0000                0.0000                0.0000
+----------------------------------------------------------------------------
+
+. 
+. 
+. * --------------------------------------------------------------------------
+. di ""
+
+
+. di "======================================================================"
+======================================================================
+
+. di "FIGURE A6(b): Number of regions sourced, by immigrant share group"
+FIGURE A6(b): Number of regions sourced, by immigrant share group
+
+. di "  (1% bins no bootstrap — point estimates only)"
+  (1% bins no bootstrap — point estimates only)
+
+. di "======================================================================"
+======================================================================
+
+. 
+. ****************************
+. * Table 14
+. * Figure A6(b): Number of origin regions by immigrant-share group
+. ****************************
+. 
+. * Variables: med_countries / mean_countries (median and mean of
+. *   number_of_countries per 1%-wide immigrant-share bin);
+. *   mig_share_pct (midpoint of bin in %); N_a6b (unweighted count per bin)
+. * Selection: 2003-2011, establishments >= 10 employees;
+. *   1%-wide bins covering immigrant shares 0-20% (20 bins)
+. * No bootstrap CIs — point estimates only.
+. 
+. use "${data}/medians_a6b.dta", clear
+
+. drop if mig_share_group == .
+(1 observation deleted)
+
+. gen mig_share_pct = (mig_share_group - 0.5)   // midpoint in percent
+
+. format med_countries mean_countries %6.3f
+
+. tabdisp mig_share_pct, c(N_a6b) concise
+
+--------------------------------
+mig_share |
+_pct      |                N_a6b
+----------+---------------------
+       .5 |               356978
+      1.5 |                10810
+      2.5 |                10781
+      3.5 |                11756
+      4.5 |                11916
+      5.5 |                10862
+      6.5 |                 8974
+      7.5 |                10008
+      8.5 |                 7776
+      9.5 |                 6081
+     10.5 |                 6928
+     11.5 |                 9560
+     12.5 |                 7658
+     13.5 |                 6895
+     14.5 |                 6165
+     15.5 |                 6712
+     16.5 |                 5192
+     17.5 |                 5022
+     18.5 |                 6119
+     19.5 |                 5742
+--------------------------------
+
+. tabdisp mig_share_pct, c(med_countries mean_countries) concise
+
+------------------------------------------------------
+mig_share |
+_pct      |        med_countries        mean_countries
+----------+-------------------------------------------
+       .5 |                0.000                 0.171
+      1.5 |                5.000                 4.830
+      2.5 |                6.000                 5.054
+      3.5 |                6.000                 5.172
+      4.5 |                6.000                 4.995
+      5.5 |                6.000                 4.940
+      6.5 |                6.000                 5.433
+      7.5 |                6.000                 5.243
+      8.5 |                6.000                 5.472
+      9.5 |                6.000                 5.560
+     10.5 |                6.000                 5.418
+     11.5 |                7.000                 5.993
+     12.5 |                7.000                 6.103
+     13.5 |                7.000                 5.481
+     14.5 |                7.000                 6.215
+     15.5 |                7.000                 6.034
+     16.5 |                6.000                 5.542
+     17.5 |                8.000                 6.674
+     18.5 |                7.000                 6.498
+     19.5 |                6.000                 6.185
+------------------------------------------------------
+
+. 
+. 
+. /*==============================================================================
+>   FIGURES (added for JPE reproducibility deposit — not part of the original
+>   submission). This section does not modify any of the analysis above; it only
+>   re-reads the .dta files already saved by this do-file and plots them, since
+>   the tables above are the FDZ-disclosed numbers underlying Figures 1, A1-A4,
+>   and A6, which in the original submission were turned into figures in Excel.
+> 
+>   NOTE ON EXACT APPEARANCE: the published figures were built by hand in Excel
+>   from these disclosed tables (styling, colors, markers chosen by the
+>   authors). The Stata graphs below plot the same underlying numbers but will
+>   not look pixel-identical to the paper's versions (font, colors, marker
+>   style, axis formatting, etc. all differ) -- only the data displayed is the
+>   same.
+> 
+>   Output: liab_analysis/output/figure_*.jpg
+> ==============================================================================*/
+. 
+. set scheme s1color
+
+. global figout = subinstr("${prog}", "/prog", "/output", 1)
+
+. cap mkdir "${figout}"
+
+. 
+. local xopts  xlabel(1/10, valuelabel angle(45) labsize(vsmall)) ///
+>              xtitle("Establishment size bin (employment)", size(small))
+
+. local gropts graphregion(color(white)) plotregion(color(white)) ysize(4.5) xsize(6.5) ylabel(, format(%5.2f))
+
+. 
+. * ---- Figure 1: Median immigrant wage-bill share by size bin -----------------
+. use "${data}/plot_data_main.dta", clear
+
+. twoway (rcap ci_lo_mig_share ci_hi_mig_share decile_wbill, lcolor(navy%40)) ///
+>        (connected mig_share decile_wbill, lcolor(navy) mcolor(navy) msymbol(O)), ///
+>        ytitle("Immigrant wage-bill share (median)", size(small)) `xopts' `gropts' ///
+>        legend(off) title("Figure 1: Immigrant share by establishment size", size(medium)) ///
+>        name(fig1, replace)
+
+. graph export "${figout}/figure_1.jpg", replace width(2000) height(1500)
+file /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/output/figure_1.jpg saved as JPG format
+
+. 
+. * ---- Figure A1(a): Controlling for industry and geography -------------------
+. use "${data}/plot_data_main.dta", clear
+
+. twoway (rcap ci_lo_noindloc ci_hi_noindloc decile_wbill, lcolor(maroon%40)) ///
+>        (connected mig_share decile_wbill, lcolor(navy) mcolor(navy) msymbol(O)) ///
+>        (connected mig_share_noindloc decile_wbill, lcolor(maroon) mcolor(maroon) msymbol(Dh)), ///
+>        ytitle("Immigrant wage-bill share", size(small)) `xopts' `gropts' ///
+>        legend(order(2 "Raw" 3 "Residualized (ind x yr, LLM x yr FE)") ///
+>               cols(1) ring(0) position(11) region(lstyle(none)) size(small)) ///
+>        title("Figure A1(a): Controlling for industry and geography", size(medium)) ///
+>        name(figA1a, replace)
+
+. graph export "${figout}/figure_A1a.jpg", replace width(2000) height(1500)
+file /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/output/figure_A1a.jpg saved as JPG format
+
+. 
+. * ---- Figure A1(b): Tradable vs. non-tradable ---------------------------------
+. use "${data}/plot_data_main.dta", clear
+
+. twoway (rcap ci_lo_t ci_hi_t decile_wbill, lcolor(navy%40)) ///
+>        (rcap ci_lo_nt ci_hi_nt decile_wbill, lcolor(maroon%40)) ///
+>        (connected mig_share_t  decile_wbill, lcolor(navy)   mcolor(navy)   msymbol(O)) ///
+>        (connected mig_share_nt decile_wbill, lcolor(maroon) mcolor(maroon) msymbol(Dh)), ///
+>        ytitle("Immigrant wage-bill share", size(small)) `xopts' `gropts' ///
+>        legend(order(3 "Tradable" 4 "Non-tradable") cols(1) ring(0) position(11) ///
+>               region(lstyle(none)) size(small)) ///
+>        title("Figure A1(b): Tradable vs. non-tradable", size(medium)) name(figA1b, replace)
+
+. graph export "${figout}/figure_A1b.jpg", replace width(2000) height(1500)
+file /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/output/figure_A1b.jpg saved as JPG format
+
+. 
+. * ---- Figure A1(c): Exporter vs. non-exporter ---------------------------------
+. use "${data}/plot_data_main.dta", clear
+
+. twoway (rcap ci_lo_exp ci_hi_exp decile_wbill, lcolor(navy%40)) ///
+>        (rcap ci_lo_nexp ci_hi_nexp decile_wbill, lcolor(maroon%40)) ///
+>        (connected mig_share_exp  decile_wbill, lcolor(navy)   mcolor(navy)   msymbol(O)) ///
+>        (connected mig_share_nexp decile_wbill, lcolor(maroon) mcolor(maroon) msymbol(Dh)), ///
+>        ytitle("Immigrant wage-bill share", size(small)) `xopts' `gropts' ///
+>        legend(order(3 "Exporter" 4 "Non-exporter") cols(1) ring(0) position(11) ///
+>               region(lstyle(none)) size(small)) ///
+>        title("Figure A1(c): Exporter vs. non-exporter", size(medium)) name(figA1c, replace)
+
+. graph export "${figout}/figure_A1c.jpg", replace width(2000) height(1500)
+file /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/output/figure_A1c.jpg saved as JPG format
+
+. 
+. * ---- Figure A1(d): Exporter vs. non-exporter, residualised ------------------
+. use "${data}/plot_data_main.dta", clear
+
+. twoway (rcap ci_lo_exp_nind ci_hi_exp_nind decile_wbill, lcolor(navy%40)) ///
+>        (rcap ci_lo_nexp_nind ci_hi_nexp_nind decile_wbill, lcolor(maroon%40)) ///
+>        (connected mig_share_exp_nind  decile_wbill, lcolor(navy)   mcolor(navy)   msymbol(O)) ///
+>        (connected mig_share_nexp_nind decile_wbill, lcolor(maroon) mcolor(maroon) msymbol(Dh)), ///
+>        ytitle("Immigrant wage-bill share (residualized)", size(small)) `xopts' `gropts' ///
+>        legend(order(3 "Exporter" 4 "Non-exporter") cols(1) ring(0) position(11) ///
+>               region(lstyle(none)) size(small)) ///
+>        title("Figure A1(d): Exporter vs. non-exporter, residualised", size(medium)) ///
+>        name(figA1d, replace)
+
+. graph export "${figout}/figure_A1d.jpg", replace width(2000) height(1500)
+file /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/output/figure_A1d.jpg saved as JPG format
+
+. 
+. * ---- Figure A2(a): College vs. non-college -----------------------------------
+. use "${data}/plot_data_coll.dta", clear
+
+. merge 1:1 decile_wbill using "${data}/plot_data_ncoll.dta", nogenerate
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                                11  
+    -----------------------------------------
+
+. twoway (rcap ci_lo_coll ci_hi_coll decile_wbill, lcolor(navy%40)) ///
+>        (rcap ci_lo_ncoll ci_hi_ncoll decile_wbill, lcolor(maroon%40)) ///
+>        (connected mig_share_coll  decile_wbill, lcolor(navy)   mcolor(navy)   msymbol(O)) ///
+>        (connected mig_share_ncoll decile_wbill, lcolor(maroon) mcolor(maroon) msymbol(Dh)), ///
+>        ytitle("Immigrant wage-bill share", size(small)) `xopts' `gropts' ///
+>        legend(order(3 "College" 4 "Non-college") cols(1) ring(0) position(11) ///
+>               region(lstyle(none)) size(small)) ///
+>        title("Figure A2(a): College vs. non-college", size(medium)) name(figA2a, replace)
+
+. graph export "${figout}/figure_A2a.jpg", replace width(2000) height(1500)
+file /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/output/figure_A2a.jpg saved as JPG format
+
+. 
+. * ---- Figure A2(b): Single-establishment and German-owned firms --------------
+. use "${data}/plot_data_main.dta", clear
+
+. twoway (rcap ci_lo_mig_share ci_hi_mig_share decile_wbill, lcolor(navy%40)) ///
+>        (rcap ci_lo_sing ci_hi_sing decile_wbill, lcolor(maroon%40)) ///
+>        (rcap ci_lo_nfor ci_hi_nfor decile_wbill, lcolor(forest_green%40)) ///
+>        (connected mig_share      decile_wbill, lcolor(navy)         mcolor(navy)         msymbol(O)) ///
+>        (connected mig_share_sing decile_wbill, lcolor(maroon)       mcolor(maroon)       msymbol(Dh)) ///
+>        (connected mig_share_nfor decile_wbill, lcolor(forest_green) mcolor(forest_green) msymbol(Th)), ///
+>        ytitle("Immigrant wage-bill share", size(small)) `xopts' `gropts' ///
+>        legend(order(4 "All establishments" 5 "Single-establishment" 6 "German-owned") ///
+>               cols(1) ring(0) position(11) region(lstyle(none)) size(small)) ///
+>        title("Figure A2(b): Single-establishment and German-owned firms", size(medium)) ///
+>        name(figA2b, replace)
+
+. graph export "${figout}/figure_A2b.jpg", replace width(2000) height(1500)
+file /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/output/figure_A2b.jpg saved as JPG format
+
+. 
+. * ---- Figure A3: Extensive margin of hiring -----------------------------------
+. * Bar chart (matches the chart type used for Figure A3 in the paper), with
+. * the 95% bootstrap CI overlaid as error-bar caps on each bar.
+. use "${data}/plot_data_main.dta", clear
+
+. twoway (bar hire_immigrant decile_wbill, color(navy%70) barwidth(0.8)) ///
+>        (rcap ci_lo_hire ci_hi_hire decile_wbill, lcolor(black)), ///
+>        xscale(range(0.5 10.5)) ///
+>        ytitle("Share of establishments hiring immigrants", size(small)) `xopts' `gropts' ///
+>        legend(off) title("Figure A3: Extensive margin of hiring", size(medium)) name(figA3, replace)
+
+. graph export "${figout}/figure_A3.jpg", replace width(2000) height(1500)
+file /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/output/figure_A3.jpg saved as JPG format
+
+. 
+. * ---- Figure A4(a): By tenure -------------------------------------------------
+. use "${data}/plot_data_main.dta", clear
+
+. twoway (rcap ci_lo_ep10 ci_hi_ep10 decile_wbill, lcolor(navy%40)) ///
+>        (rcap ci_lo_el10 ci_hi_el10 decile_wbill, lcolor(maroon%40)) ///
+>        (connected mig_share_ep10 decile_wbill, lcolor(navy)   mcolor(navy)   msymbol(O)) ///
+>        (connected mig_share_el10 decile_wbill, lcolor(maroon) mcolor(maroon) msymbol(Dh)), ///
+>        ytitle("Immigrant wage-bill share", size(small)) `xopts' `gropts' ///
+>        legend(order(3 ">10 years experience" 4 "<=10 years experience") ///
+>               cols(1) ring(0) position(11) region(lstyle(none)) size(small)) ///
+>        title("Figure A4(a): By tenure", size(medium)) name(figA4a, replace)
+
+. graph export "${figout}/figure_A4a.jpg", replace width(2000) height(1500)
+file /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/output/figure_A4a.jpg saved as JPG format
+
+. 
+. * ---- Figure A4(b): By age ----------------------------------------------------
+. use "${data}/plot_data_main.dta", clear
+
+. twoway (rcap ci_lo_young ci_hi_young decile_wbill, lcolor(navy%40)) ///
+>        (rcap ci_lo_old ci_hi_old decile_wbill, lcolor(maroon%40)) ///
+>        (connected mig_share_young decile_wbill, lcolor(navy)   mcolor(navy)   msymbol(O)) ///
+>        (connected mig_share_old   decile_wbill, lcolor(maroon) mcolor(maroon) msymbol(Dh)), ///
+>        ytitle("Immigrant wage-bill share", size(small)) `xopts' `gropts' ///
+>        legend(order(3 "Age < 40" 4 "Age >= 40") cols(1) ring(0) position(11) ///
+>               region(lstyle(none)) size(small)) ///
+>        title("Figure A4(b): By age", size(medium)) name(figA4b, replace)
+
+. graph export "${figout}/figure_A4b.jpg", replace width(2000) height(1500)
+file /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/output/figure_A4b.jpg saved as JPG format
+
+. 
+. * ---- Figure A6(a): Number of origin regions by size bin ---------------------
+. use "${data}/plot_data_main.dta", clear
+
+. twoway (rcap ci_lo_ncountries ci_hi_ncountries decile_wbill, lcolor(navy%40)) ///
+>        (connected number_of_countries decile_wbill, lcolor(navy) mcolor(navy) msymbol(O)), ///
+>        ytitle("Mean number of origin regions", size(small)) `xopts' `gropts' ///
+>        legend(off) title("Figure A6(a): Number of origin regions by size bin", size(medium)) ///
+>        name(figA6a, replace)
+
+. graph export "${figout}/figure_A6a.jpg", replace width(2000) height(1500)
+file /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/output/figure_A6a.jpg saved as JPG format
+
+. 
+. * ---- Figure A6(b): Number of origin regions by immigrant-share group --------
+. * Re-derive mig_share_pct from medians_a6b.dta exactly as done for Table 14
+. * above (that in-memory copy is no longer available here, since the Figure
+. * 1 - A6(a) sections above have since loaded other datasets). No bootstrap CI
+. * is computed for this figure in the analysis above, so none is plotted.
+. use "${data}/medians_a6b.dta", clear
+
+. drop if mig_share_group == .
+(1 observation deleted)
+
+. gen mig_share_pct = (mig_share_group - 0.5)   // midpoint in percent
+
+. twoway (connected med_countries  mig_share_pct, lcolor(navy)   mcolor(navy)   msymbol(O)) ///
+>        (connected mean_countries mig_share_pct, lcolor(maroon) mcolor(maroon) msymbol(Dh)), ///
+>        ytitle("Number of origin regions", size(small)) ///
+>        xtitle("Immigrant wage-bill share (%, bin midpoint)", size(small)) `gropts' ///
+>        legend(order(1 "Median" 2 "Mean") cols(1) ring(0) position(11) ///
+>               region(lstyle(none)) size(small)) ///
+>        title("Figure A6(b): Number of origin regions by immigrant-share group", size(medium)) ///
+>        name(figA6b, replace)
+
+. graph export "${figout}/figure_A6b.jpg", replace width(2000) height(1500)
+file /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/output/figure_A6b.jpg saved as JPG format
+
+. 
+. 
+. log close
+      name:  <unnamed>
+       log:  /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/log/17_empirical_facts.log
+  log type:  text
+ closed on:   9 Sep 2026, 15:58:22
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

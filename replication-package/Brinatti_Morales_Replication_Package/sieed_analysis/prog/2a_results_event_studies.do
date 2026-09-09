@@ -432,4 +432,103 @@ cap drop _est*
 
 
 
+/*==============================================================================
+  FIGURES (added for JPE reproducibility deposit — not part of the original
+  submission). This section does not modify or re-estimate any of the analysis
+  above; it only reads back the stored estimation results (eststo y2 and y4,
+  set earlier in this do-file) to plot Figures 2 and A8, since in the original
+  submission these event-study coefficients were turned into figures in Excel.
+
+  NOTE ON EXACT APPEARANCE: the published Figures 2 and A8 were built by hand
+  in Excel from these coefficient tables (styling, colors, markers chosen by
+  the authors). The Stata graphs below plot the same underlying numbers but
+  will not look pixel-identical to the paper's versions (font, colors,
+  marker style, axis formatting, etc. all differ) -- only the data displayed
+  is the same.
+
+  Output: sieed_analysis/output/figure_2.jpg, figure_A8.jpg
+==============================================================================*/
+
+set scheme s1color
+global figout = subinstr("${prog}", "/prog", "/output", 1)
+cap mkdir "${figout}"
+
+local evyears 2006 2007 2008 2009 2011 2012 2013 2014 2015 2016 2017 2018
+
+* ---- Figure A8: Baseline event study (pooled, model y2) ---------------------
+estimates restore y2
+
+tempname postA8
+tempfile a8data
+postfile `postA8' event_year coef se using `a8data', replace
+post `postA8' (2010) (0) (0)
+foreach x of local evyears {
+    post `postA8' (`x') (_b[treat_`x']) (_se[treat_`x'])
+}
+postclose `postA8'
+
+preserve
+    use `a8data', clear
+    sort event_year
+    gen ci_lo = coef - 1.96*se
+    gen ci_hi = coef + 1.96*se
+    replace ci_lo = . if event_year == 2010
+    replace ci_hi = . if event_year == 2010
+
+    twoway (rcap ci_lo ci_hi event_year, lcolor(navy%40)) ///
+           (connected coef event_year, lcolor(navy) mcolor(navy) msymbol(O)), ///
+           xline(2011, lpattern(dot) lcolor(gs8)) yline(0, lpattern(dot) lcolor(gs8)) ///
+           xlabel(2006(1)2018, angle(45) labsize(vsmall)) xtitle("Year", size(small)) ///
+           ytitle("Employment relative to 2010 (coefficient)", size(small)) ///
+           legend(off) graphregion(color(white)) plotregion(color(white)) ///
+           ysize(4.5) xsize(6.5) ///
+           title("Figure A8: Baseline event study", size(medium)) ///
+           name(figA8, replace)
+    graph export "${figout}/figure_A8.jpg", replace width(2000) height(1500)
+restore
+
+* ---- Figure 2: Event study with breakdown by establishment size (model y4) --
+estimates restore y4
+
+tempname postFig2
+tempfile fig2data
+postfile `postFig2' event_year coefL seL coefS seS using `fig2data', replace
+post `postFig2' (2010) (0) (0) (0) (0)
+foreach x of local evyears {
+    local bL  = _b[treat_`x']
+    local seL = _se[treat_`x']
+    lincom _b[treat_`x'] + _b[treat_b4_`x']
+    local bS  = r(estimate)
+    local seS = r(se)
+    post `postFig2' (`x') (`bL') (`seL') (`bS') (`seS')
+}
+postclose `postFig2'
+
+preserve
+    use `fig2data', clear
+    sort event_year
+    gen ci_lo_L = coefL - 1.96*seL
+    gen ci_hi_L = coefL + 1.96*seL
+    gen ci_lo_S = coefS - 1.96*seS
+    gen ci_hi_S = coefS + 1.96*seS
+    foreach v in ci_lo_L ci_hi_L ci_lo_S ci_hi_S {
+        replace `v' = . if event_year == 2010
+    }
+
+    twoway (rcap ci_lo_L ci_hi_L event_year, lcolor(navy%40)) ///
+           (rcap ci_lo_S ci_hi_S event_year, lcolor(maroon%40)) ///
+           (connected coefL event_year, lcolor(navy)   mcolor(navy)   msymbol(O)) ///
+           (connected coefS event_year, lcolor(maroon) mcolor(maroon) msymbol(Dh)), ///
+           xline(2011, lpattern(dot) lcolor(gs8)) yline(0, lpattern(dot) lcolor(gs8)) ///
+           xlabel(2006(1)2018, angle(45) labsize(vsmall)) xtitle("Year", size(small)) ///
+           ytitle("Employment relative to 2010 (coefficient)", size(small)) ///
+           legend(order(3 "Large establishments" 4 "Small firms") ///
+                  cols(1) ring(0) position(11) region(lstyle(none)) size(small)) ///
+           graphregion(color(white)) plotregion(color(white)) ysize(4.5) xsize(6.5) ///
+           title("Figure 2: Event study by establishment size", size(medium)) ///
+           name(fig2, replace)
+    graph export "${figout}/figure_2.jpg", replace width(2000) height(1500)
+restore
+
+
 log close

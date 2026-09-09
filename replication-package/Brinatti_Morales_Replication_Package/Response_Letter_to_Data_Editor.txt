@@ -1,173 +1,154 @@
-July 27th, 2026
+August 28th, 2026
 
 Dear Florian,
 
 Re: JPE manuscript 20211186, "Firm Heterogeneity and the Impact of Immigration:
 Evidence from German Establishments" (Brinatti and Morales) -- Response to
-reproducibility report, Iteration 1
+reproducibility report, Iteration 2
 
-Thank you and your reproducibility team for the thorough review of our
-replication package. We address every point raised below, following the
-order of your report, and describe exactly what has been changed in the
-package. All README section references below are to the revised README.txt
-included in this deposit.
-
---------------------------------------------------------------------------------
-1. DATA CITATIONS (Report Section 2, item 1; Section 5 "Details on each Data
-   Source")
---------------------------------------------------------------------------------
-
-We have added a full citation for every dataset used in the paper, both in
-the README and in the paper itself.
-
-README: a new Section 8 ("Data Citations") gives a complete citation for
-every dataset, organized in three groups and cross-referenced from every
-place the dataset is first described (Sections 2.1-2.3):
-  - 8.1 Confidential FDZ data: LIAB Longitudinal Model 1993-2014 (LIAB LM
-    9314; Heining, Klosterhuber, Lehnert and Seth 2016), the IAB
-    Establishment Panel waves 2004-2012, and SIEED 7518 v1 (Berge et al.
-    2020, DOI 10.5164/IAB.SIEED7518.de.en.v1), each with its FDZ project
-    number (fdz1328 / fdz2224).
-  - 8.2 Public secondary data: the Destatis CPI series, World Bank World
-    Development Indicators, the World Input-Output Database (Timmer et al.
-    2015), and the OECD series underlying the Section 6.1 dollar-gains
-    conversion, each with its dataset identifier/DOI and access URL.
-  - 8.3 Data derived from published academic work with no independent
-    public data DOI: the Kropp and Schwengler (2011) local-labor-market
-    concordance and the Peri and Sparber (2009) O*NET occupational
-    task-content mapping.
-
-Paper: Citations have been inserted at the relevant points
-in the manuscript: the data description, the CPI deflation step, the
-GDP_RoW_Ger and tradeable-share calibration moments, the Section 6.1
-dollar-gains conversion, and the local-labor-market and O*NET task-content
-descriptions. See pdf Brinatti_Morales_final_draft
+Thank you and your reproducibility team for the second round of review. We
+address every point raised in your report below, following its order, and
+describe exactly what has been changed in the package. All README section
+references below are to the revised README.txt included in this deposit.
 
 --------------------------------------------------------------------------------
-2. MISSING DATASETS PREVENTING REPRODUCTION OF SOME EXHIBITS (Report Section
-   2, item 2; Section 8 "Replication"; Section 9.3)
+1. MISSING MATLAB TOOLBOX (Report Summary, item 1; Section 8 "Replication")
 --------------------------------------------------------------------------------
 
-We investigated each of the three files your team reported as missing.
-
-(a) sieed_7518_v1.dta (blocked Tables A3-A5, Figures 2, A5, A7, A8): we
-confirmed this file is included in the package at
-sieed_analysis/orig/sieed_7518_v1.dta, and that every do-file that reads it
-(1a_create_data_event_study.do, 1c_create_data_figA7.do) references the
-identical filename and case. There was an issue with file name capitalization that created the issue.
-
-(b) crosswalk_beruf_gr_blossfeld.dta (blocked Tables A6-A8, Figure A9): this
-is not a raw/shipped file but an intermediate dataset that
-3_crosswalk_occupation_blossfeld.do constructs and
-18_immigrant_comparative_advantage.do subsequently reads. There was an issue with file name capitalization that created the issue.
-
-(c) WIOT2012_October16_ROW.dta (blocked both calibration_external moments):
-we confirmed this file is included at
-calibration_external/data/WIOT2012_October16_ROW.dta and that both
-do-files that use it (tradable_consumption_share.do and gdp_per_worker_*.do)
-reference it with matching case and path. The path for this file was incorrect in the original submission.
+Your team's run failed on mvnrnd in Heterogeneity.m (called from
+Counterfactual_heterogeneous_open.m / Counterfactual_heterogeneous_closed.m)
+until the Statistics and Machine Learning Toolbox was installed, even though
+our README stated that no additional MATLAB toolboxes were required. README
+Section 3.2 now lists the Statistics and Machine Learning Toolbox as a
+requirement alongside the Optimization Toolbox, with the specific function
+(mvnrnd) and file that need it named explicitly.
 
 --------------------------------------------------------------------------------
-3. TABLE OF WHICH EXHIBITS REQUIRE CONFIDENTIAL DATA (Report Section 2, item
-   3)
+2. WHERE TO PUT THE ADO FILES (Report Summary, item 2)
 --------------------------------------------------------------------------------
 
-README Section 6 ("Mapping of Exhibits to Programs") now includes a
-"Confidential data?" column for every table, figure, and calibration moment
-in the paper, indicating whether reproducing it requires genuine FDZ access
-(Section 2.1) or can be done entirely from the public data and structural
-model shipped in the package. Only the model-side component of Table 1,
-Table 2, Tables D1-D3, Figure 4, and Figures D1-D2 fall in the latter
-category; every other exhibit is built from the confidential LIAB, IAB
-Establishment Panel, or SIEED data (or, for Table C7 and Figure 3, combines
-a confidential-data component with a model component) and cannot be
-reproduced from the shipped test data alone.
+README Section 3.1 previously named the three non-SSC ado files
+(bartik_weight.ado, btsls.ado, ch_weak.ado) and their source but did not say
+where to place them. It now explains that they should be copied into
+liab_analysis/prog/ (already on the adopath via `capture adopath++ ${prog}`
+in every liab_analysis do-file that needs them), or alternatively into the
+user's personal Stata ado directory (via `sysdir`).
 
 --------------------------------------------------------------------------------
-4. INSTRUCTIONS FOR ACCESSING THE CONFIDENTIAL DATA (Report Section 2, item
-   4)
+3. CODE TO GENERATE THE FIGURES (Report Summary, item 3; Section 9.3, "No
+   image files produced by code; only underlying data tables")
 --------------------------------------------------------------------------------
 
-README Section 2.1 now includes step-by-step access instructions: submitting
-a request form and project description by email to the FDZ
-(iab.fdz@iab.de); the FDZ's review and contract with the researcher's
-institution; no monetary cost as of May 2026 (to be reconfirmed with the
-FDZ); and a description of the Josua remote-access tool used for most of
-this project, with on-site access also available at a number of locations
-(linked in the README). We note that access terms are set by the FDZ and may
-change over time; we have stated this explicitly and dated the description.
+Because of FDZ output-disclosure rules, the figures in the empirical folders
+were historically produced as underlying data tables only, which we then
+turned into figures by hand in Excel; the code itself never produced an
+image file. We have added a Stata plotting section to the end of every
+do-file that was flagged as missing this, in every case reading back the
+already-disclosed tables/estimates without altering any of the existing
+analysis code:
+
+  liab_analysis/prog/17_empirical_facts.do
+      Figures 1, A1(a)-(d), A2(a)-(b), A3, A4(a)-(b), A6(a)-(b)
+      (12 panels total; Figure A3 is rendered as a bar chart, matching the
+      paper, all others as connected-line plots with 95% CI whiskers)
+  liab_analysis/prog/18_immigrant_comparative_advantage.do
+      Figure A9
+  sieed_analysis/prog/2a_results_event_studies.do
+      Figures 2 and A8 (the coefficients were only ever printed via esttab/
+      lincom; we now capture them via `estimates restore` on the models
+      already stored by the existing eststo calls, with no re-estimation)
+  sieed_analysis/prog/2b_results_figA7.do
+      Figure A7 (point estimates and bootstrap SDs were only ever printed
+      via `table`; both are now also stashed to small datasets and merged)
+  sieed_analysis/prog/2c_results_figA5.do
+      Figure A5 (2 panels; same `table`-only limitation as above)
+
+Each added section is clearly marked with a header comment beginning
+"FIGURE(S) (added for JPE reproducibility deposit -- not part of the
+original submission)" and states explicitly that it does not modify any of
+the pre-existing analysis. Output is written to a new output/ subfolder
+created inside liab_analysis/ and sieed_analysis/ respectively (e.g.
+liab_analysis/output/figure_1.jpg). Figures 3, 4, D1 and D2 in
+model_analysis already produced .jpg files via existing code and required
+no changes.
+
+Because the published figures were built by hand in Excel from these
+disclosed tables (styling, colors, and markers chosen by the authors), the
+newly added Stata graphs reproduce the same underlying numbers but are not
+pixel-identical to the published versions. We have added a "NOTE ON EXACT
+APPEARANCE" to the header of every added plotting section, and a
+corresponding note in README Sections 4.2, 4.4 and 6, making this explicit.
 
 --------------------------------------------------------------------------------
-5. PRESERVATION PERIOD AND AFFIRMATION OF SUPPORT FOR REPLICATION CHECKS
-   (Report Section 5, required items)
+4. OTHER BUGS (Report Summary, item 4)
 --------------------------------------------------------------------------------
 
-New README Section 2.5 states that (i) the FDZ preserves its standardized
-data products independently of individual research projects and makes
-superseded versions available on request, and that IAB policy guarantees
-data access for replication purposes for ten years from the date of
-publication; and (ii) the authors affirm their commitment to preserving the
-code and permitted materials for at least five years post-publication and to
-providing reasonable assistance with clarification and replication requests,
-including guidance on FDZ data access. Direct contact emails for both
-authors are included.
+Re-reading Section 8 of your report, the only two concrete issues described
+anywhere are (a) the missing MATLAB toolbox, addressed in item 1 above, and
+(b) a file-permissions error on log using "${log}/master.log" that your
+team resolved with `chmod -R u+w` before proceeding. We could not identify
+any other specific bug named in the report. On (b): README Section 5 now
+tells replicators to confirm that the unzipped package (in particular the
+empty data/ and log/ subfolders of liab_analysis/ and sieed_analysis/) is
+writable before running any code, with the fix for both macOS/Linux
+(`chmod -R u+w`) and Windows (clearing the Read-only attribute, or
+`attrib -R ... /S /D`).
 
 --------------------------------------------------------------------------------
-6. CODEBOOK (Report Section 5, required item)
+5. RUN-TIME INFORMATION ON THE SHIPPED TEST DATA (Report Section 9.1,
+   "Missing Requirements")
 --------------------------------------------------------------------------------
 
-A full variable-by-variable codebook (variable names, storage types, labels,
-and coded categories, in English) for every raw/test .dta file shipped in
-liab_analysis/orig/ and sieed_analysis/orig/ is provided as
-README_Appendix_Codebooks.txt and referenced from README Section 7.
+README Section 3.3 now states that the shipped TEST data take approximately
+1 hour to run end to end (Stata analysis ~48 minutes, MATLAB model ~8
+minutes, as timed on your team's MacBook Air 2020 / M1 / 8GB RAM machine).
 
 --------------------------------------------------------------------------------
-7. SOFTWARE AND COMPUTATIONAL REQUIREMENTS (Report Section 9.1)
+6. OTHER ISSUES (Report Section 9.5)
 --------------------------------------------------------------------------------
 
-We added the `require` Stata package to the installation list in README
-Section 3.1; it was previously listed only inside a commented-out install
-block in master_file.do and was easy to miss when reading the README alone.
-We also added memory and storage requirements as new README Section 3.4:
-the confidential-data analysis runs entirely on FDZ servers (no local
-provisioning needed by replicators), and the MATLAB structural model runs
-on any standard machine meeting MathWorks' 8 GB RAM recommendation, with the
-model_analysis folder itself under 15 MB.
+We address each bullet in turn:
+
+  - "If MATLAB is added to PATH, everything can be replicated using
+    master_file.do": README Section 5 now states this explicitly, alongside
+    the existing note in master_file.do itself about replacing `matlab`
+    with a full path if it is not on PATH.
+  - "No info on where the .ado files should be located": see item 2 above.
+  - "The package should be unzipped directly to replication-package
+    folder": README Section 5 now instructs replicators to unzip the
+    archive into a folder literally named "replication-package", matching
+    the folder layout assumed by the example "root" path in master_file.do.
+  - "There is no paper in the paper-appendices folder, please relocate":
+    Brinatti_Morales_final_draft.pdf has been moved from the package root
+    into a new paper-appendices/ folder, referenced from README Section 0
+    and from our Iteration 1 response letter.
+  - "Please provide the file in open format:
+    model_analysis/data/inputs/Validation_data.xlsx": we have added
+    Validation_data.csv, an open-format (plain-text) copy of the workbook's
+    single sheet, alongside the .xlsx, documented in README Section 2.2. The
+    code continues to read the .xlsx directly (via `import excel` in
+    Validation_cross_CI_heterog.do); the .csv is a convenience copy with
+    identical content, provided for accessibility.
+  - "There's an unnecessary tabulate in readme in table line 459": the
+    misaligned "Table 1 (data side)" row in the README Section 6
+    exhibit-mapping table (which had stray extra whitespace relative to the
+    surrounding rows) has been corrected.
 
 --------------------------------------------------------------------------------
-8. NUMERICAL AND STRUCTURAL DISCREPANCIES NOTED IN YOUR CHECK (Report Section
-   9.3)
+7. POTENTIAL PII INDICATORS (Report Sections 7.1 and 10.2)
 --------------------------------------------------------------------------------
 
-We note, and do not believe further action is needed on, the following:
-  - The value mismatches your team observed across Tables A1-A2, C1, C2-C4,
-    C3, C5, C6, C7, C8-C13, Kappa, and Figures 1, A1-A4, A6, C1 are expected:
-    as stated in README Sections 2.1 and 3.3, the shipped orig/ files are
-    FDZ-provided TEST (dummy) data and cannot reproduce the published
-    numbers under any circumstances; only genuine FDZ data access does so.
-  - The rounding discrepancies you flagged in Table 1 and Table C7 (e.g.
-    30.82 vs. 30.83) reflect FDZ statistical disclosure rounding applied
-    when results are exported from the secure environment, not a
-    computational error.
-  - Figure 3: the structural issues you describe (non-tradeable decile 3
-    empty, several bins with N=2, values shown pre-normalization) are a
-    direct consequence of running the same test-data pipeline described
-    above on a small dummy sample, and are consistent with, not additional
-    to, the general test-data caveat. On the "empty figure_3.png" file: we
-    confirmed the code (Validation_cross_CI_heterog.do, line 177) writes
-    figure_3.jpg, not .png, and that our reference copy of this file
-    (model_analysis/output/figures/figure_3.jpg, ~420 KB) is a valid,
-    non-empty image; we believe your team's empty file resulted from the
-    graph-export step failing further downstream given the malformed
-    test-data deciles above, consistent with the same root cause, rather
-    than a separate file-naming defect.
-
---------------------------------------------------------------------------------
-9. DEPOSIT TITLE AND AUTHOR/AFFILIATION METADATA (Report Section 6, required
-   items)
---------------------------------------------------------------------------------
-
-We changed the title of the readme to follow the guidelines stated in the report.
+We reviewed the flagged variable names and file contents (e.g. "son",
+"lat", "loc", "url", "sex", "name", "country"). To the best of our
+knowledge these are false positives from substring matching within longer
+variable or field names (e.g. "person", "season", "local", "location")
+rather than actual personally identifying information. README Section 2.4
+now includes a note to this effect, and states more generally that the
+confidential IAB/FDZ data are anonymized by the data provider before being
+made available to researchers, that all analysis and disclosure followed
+the FDZ's own statistical disclosure control process (Section 2.5), and
+that this project was reviewed by the University of Michigan Institutional
+Review Board and determined to be exempt from IRB review.
 
 --------------------------------------------------------------------------------
 

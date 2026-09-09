@@ -1,0 +1,450 @@
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/log/3_crosswalk_occupation_blossfeld.log
+  log type:  text
+ opened on:   9 Sep 2026, 15:07:05
+
+. 
+. * Crosswalk between occupation codes (beruf_gr) and Blossfeld categories
+. * Agostina Brinatti & Nicolas Morales
+. * Source data: Created manually following Blossfeld (1985); guided by
+. *              "04_occ_blossfeld" from Gangl et al. (2020),
+. *              https://labourmarketresearch.springeropen.com/articles/10.1186/s12651-020-00275-9
+. 
+. /*      This dofile creates a concordance between the LIAB occupation codes
+>         (beruf_gr, 120 categories) and the 12 Blossfeld broad occupation groups
+>         used in Table A6 and Figure A9.
+> 
+>         Input:  None (dataset constructed from scratch)
+> 
+>         Output:
+>           ${data}/crosswalk_beruf_gr_blossfeld.dta — beruf_gr to occ_bl crosswalk
+> 
+>         No output tables or figures are produced in this dofile.
+> */
+. 
+. clear
+
+. 
+. set more off
+
+. set matsize 10000
+set matsize ignored.
+    Matrix sizes are no longer limited by c(matsize) in modern Statas.  Matrix sizes are now limited by edition of Stata.  See limits for more details.
+
+. set linesize 255
+
+. set seed 1234
+
+. 
+. capture adopath++ ${prog}
+
+. 
+.  set obs 120
+Number of observations (_N) was 0, now 120.
+
+.  gen beruf_gr   =_n
+
+.  gen occ_bl     = 0
+
+. 
+. ********************************************************************************
+. * Blossfeld occupation as close as possible to the one based on the narrow definition
+. ********************************************************************************
+. * comment:
+. 
+. replace occ_bl=1 if beruf_gr==1
+(1 real change made)
+
+. replace occ_bl=1 if beruf_gr==2
+(1 real change made)
+
+. replace occ_bl=2 if beruf_gr==3
+(1 real change made)
+
+. replace occ_bl=2 if beruf_gr==4
+(1 real change made)
+
+. replace occ_bl=2 if beruf_gr==5
+(1 real change made)
+
+. replace occ_bl=3 if beruf_gr==6
+(1 real change made)
+
+. replace occ_bl=2 if beruf_gr==7
+(1 real change made)
+
+. replace occ_bl=2 if beruf_gr==8
+(1 real change made)
+
+. replace occ_bl=3 if beruf_gr==9
+(1 real change made)
+
+. replace occ_bl=3 if beruf_gr==10
+(1 real change made)
+
+. replace occ_bl=2 if beruf_gr==11
+(1 real change made)
+
+. replace occ_bl=2 if beruf_gr==12
+(1 real change made)
+
+. replace occ_bl=2 if beruf_gr==13
+(1 real change made)
+
+. replace occ_bl=2 if beruf_gr==14
+(1 real change made)
+
+. replace occ_bl=2 if beruf_gr==15
+(1 real change made)
+
+. replace occ_bl=2 if beruf_gr==16
+(1 real change made)
+
+. replace occ_bl=2 if beruf_gr==17
+(1 real change made)
+
+. replace occ_bl=2 if beruf_gr==18
+(1 real change made)
+
+. replace occ_bl=2 if beruf_gr==19
+(1 real change made)
+
+. replace occ_bl=3 if beruf_gr==20
+(1 real change made)
+
+. replace occ_bl=3 if beruf_gr==21
+(1 real change made)
+
+. replace occ_bl=3 if beruf_gr==22
+(1 real change made)
+
+. replace occ_bl=3 if beruf_gr==23
+(1 real change made)
+
+. replace occ_bl=3 if beruf_gr==24
+(1 real change made)
+
+. replace occ_bl=3 if beruf_gr==25
+(1 real change made)
+
+. replace occ_bl=3 if beruf_gr==26
+(1 real change made)
+
+. replace occ_bl=3 if beruf_gr==27
+(1 real change made)
+
+. replace occ_bl=3 if beruf_gr==28
+(1 real change made)
+
+. replace occ_bl=4 if beruf_gr==29
+(1 real change made)
+
+. replace occ_bl=3 if beruf_gr==30
+(1 real change made)
+
+. replace occ_bl=3 if beruf_gr==31
+(1 real change made)
+
+. replace occ_bl=3 if beruf_gr==32
+(1 real change made)
+
+. replace occ_bl=2 if beruf_gr==33
+(1 real change made)
+
+. replace occ_bl=2 if beruf_gr==34
+(1 real change made)
+
+. replace occ_bl=2 if beruf_gr==35
+(1 real change made)
+
+. replace occ_bl=2 if beruf_gr==36
+(1 real change made)
+
+. replace occ_bl=2 if beruf_gr==37
+(1 real change made)
+
+. replace occ_bl=3 if beruf_gr==38
+(1 real change made)
+
+. replace occ_bl=2 if beruf_gr==39
+(1 real change made)
+
+. replace occ_bl=2 if beruf_gr==40
+(1 real change made)
+
+. replace occ_bl=2 if beruf_gr==41
+(1 real change made)
+
+. replace occ_bl=3 if beruf_gr==42
+(1 real change made)
+
+. replace occ_bl=2 if beruf_gr==43
+(1 real change made)
+
+. replace occ_bl=2 if beruf_gr==44
+(1 real change made)
+
+. replace occ_bl=2 if beruf_gr==45
+(1 real change made)
+
+. replace occ_bl=2 if beruf_gr==46
+(1 real change made)
+
+. replace occ_bl=2 if beruf_gr==47
+(1 real change made)
+
+. replace occ_bl=3 if beruf_gr==48
+(1 real change made)
+
+. replace occ_bl=3 if beruf_gr==49
+(1 real change made)
+
+. replace occ_bl=3 if beruf_gr==50
+(1 real change made)
+
+. replace occ_bl=3 if beruf_gr==51
+(1 real change made)
+
+. replace occ_bl=3 if beruf_gr==52
+(1 real change made)
+
+. replace occ_bl=2 if beruf_gr==53
+(1 real change made)
+
+. replace occ_bl=2 if beruf_gr==54
+(1 real change made)
+
+. replace occ_bl=2 if beruf_gr==55
+(1 real change made)
+
+. replace occ_bl=2 if beruf_gr==56
+(1 real change made)
+
+. replace occ_bl=2 if beruf_gr==57
+(1 real change made)
+
+. replace occ_bl=2 if beruf_gr==58
+(1 real change made)
+
+. replace occ_bl=5 if beruf_gr==59
+(1 real change made)
+
+. replace occ_bl=5 if beruf_gr==60
+(1 real change made)
+
+. replace occ_bl=5 if beruf_gr==61
+(1 real change made)
+
+. replace occ_bl=5 if beruf_gr==62
+(1 real change made)
+
+. replace occ_bl=5 if beruf_gr==63
+(1 real change made)
+
+. replace occ_bl=4 if beruf_gr==64
+(1 real change made)
+
+. replace occ_bl=4 if beruf_gr==65
+(1 real change made)
+
+. replace occ_bl=4 if beruf_gr==66
+(1 real change made)
+
+. replace occ_bl=4 if beruf_gr==67
+(1 real change made)
+
+. replace occ_bl=4 if beruf_gr==68
+(1 real change made)
+
+. replace occ_bl=4 if beruf_gr==69
+(1 real change made)
+
+. replace occ_bl=4 if beruf_gr==70
+(1 real change made)
+
+. replace occ_bl=4 if beruf_gr==71
+(1 real change made)
+
+. replace occ_bl=11 if beruf_gr==72
+(1 real change made)
+
+. replace occ_bl=10 if beruf_gr==73
+(1 real change made)
+
+. replace occ_bl=11 if beruf_gr==74
+(1 real change made)
+
+. replace occ_bl=10 if beruf_gr==75
+(1 real change made)
+
+. replace occ_bl=11 if beruf_gr==76
+(1 real change made)
+
+. replace occ_bl=11 if beruf_gr==77
+(1 real change made)
+
+. replace occ_bl=11 if beruf_gr==78
+(1 real change made)
+
+. replace occ_bl=7 if beruf_gr==79
+(1 real change made)
+
+. replace occ_bl=6 if beruf_gr==80
+(1 real change made)
+
+. replace occ_bl=6 if beruf_gr==81
+(1 real change made)
+
+. replace occ_bl=6 if beruf_gr==82
+(1 real change made)
+
+. replace occ_bl=10 if beruf_gr==83
+(1 real change made)
+
+. replace occ_bl=6 if beruf_gr==84
+(1 real change made)
+
+. replace occ_bl=6 if beruf_gr==85
+(1 real change made)
+
+. replace occ_bl=6 if beruf_gr==86
+(1 real change made)
+
+. replace occ_bl=12 if beruf_gr==87
+(1 real change made)
+
+. replace occ_bl=12 if beruf_gr==88
+(1 real change made)
+
+. replace occ_bl=12 if beruf_gr==89
+(1 real change made)
+
+. replace occ_bl=11 if beruf_gr==90
+(1 real change made)
+
+. replace occ_bl=10 if beruf_gr==91
+(1 real change made)
+
+. replace occ_bl=11 if beruf_gr==92
+(1 real change made)
+
+. replace occ_bl=11 if beruf_gr==93
+(1 real change made)
+
+. replace occ_bl=10 if beruf_gr==94
+(1 real change made)
+
+. replace occ_bl=10 if beruf_gr==95
+(1 real change made)
+
+. replace occ_bl=6 if beruf_gr==96
+(1 real change made)
+
+. replace occ_bl=6 if beruf_gr==97
+(1 real change made)
+
+. replace occ_bl=7 if beruf_gr==98
+(1 real change made)
+
+. replace occ_bl=8 if beruf_gr==99
+(1 real change made)
+
+. replace occ_bl=7 if beruf_gr==100
+(1 real change made)
+
+. replace occ_bl=7 if beruf_gr==101
+(1 real change made)
+
+. replace occ_bl=9 if beruf_gr==102
+(1 real change made)
+
+. replace occ_bl=7 if beruf_gr==103
+(1 real change made)
+
+. replace occ_bl=8 if beruf_gr==104
+(1 real change made)
+
+. replace occ_bl=7 if beruf_gr==105
+(1 real change made)
+
+. replace occ_bl=7 if beruf_gr==106
+(1 real change made)
+
+. replace occ_bl=7 if beruf_gr==107
+(1 real change made)
+
+. replace occ_bl=8 if beruf_gr==108
+(1 real change made)
+
+. replace occ_bl=8 if beruf_gr==109
+(1 real change made)
+
+. replace occ_bl=8 if beruf_gr==110
+(1 real change made)
+
+. replace occ_bl=9 if beruf_gr==111
+(1 real change made)
+
+. replace occ_bl=8 if beruf_gr==112
+(1 real change made)
+
+. replace occ_bl=9 if beruf_gr==113
+(1 real change made)
+
+. replace occ_bl=7 if beruf_gr==114
+(1 real change made)
+
+. replace occ_bl=6 if beruf_gr==115
+(1 real change made)
+
+. replace occ_bl=6 if beruf_gr==116
+(1 real change made)
+
+. replace occ_bl=7 if beruf_gr==117
+(1 real change made)
+
+. replace occ_bl=6 if beruf_gr==118
+(1 real change made)
+
+. replace occ_bl=6 if beruf_gr==119
+(1 real change made)
+
+. replace occ_bl=6 if beruf_gr==120
+(1 real change made)
+
+. 
+. 
+. * Labels
+. label define lblBlo  1 "AGR" ///
+>                                          2 "EMB" ///
+>                                          3 "QMB" ///
+>                                          4 "TEC" ///
+>                                          5 "ING" ///
+>                                          6 "EDI" ///
+>                                          7 "QDI" ///
+>                                          8 "SEMI" ///
+>                                          9 "PROF" ///
+>                                         10 "EVB" ///
+>                                         11 "QVB" ///
+>                                         12 "MAN" ///
+>                                          0 "NO"
+
+. 
+. label values occ_bl lblBlo
+
+. label variable occ_bl "Blossfeld occupations"
+
+. 
+. * Save dataset
+. 
+. save "${data}/crosswalk_beruf_gr_blossfeld.dta" , replace
+file /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/data/crosswalk_beruf_gr_blossfeld.dta saved
+
+. 
+. log close
+      name:  <unnamed>
+       log:  /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/log/3_crosswalk_occupation_blossfeld.log
+  log type:  text
+ closed on:   9 Sep 2026, 15:07:05
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

@@ -1,0 +1,511 @@
+------------------------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/l
+> iab_analysis/log/1_cleaning_data.log
+  log type:  text
+ opened on:   9 Sep 2026, 15:01:53
+
+. 
+. * Clean individual-level LIAB data
+. * Agostina Brinatti & Nicolas Morales
+. * Source data: LIAB Longitudinal Model (version 1993-2014), IAB
+. 
+. /*      This dofile constructs the individual-level LIAB dataset used throughout
+>         the analysis. The unit of observation is worker-establishment-year.
+> 
+>         It does the following:
+>           (i)  Keeps one spell per worker and removes duplicates
+>           (ii) Constructs a consistent immigrant indicator based on citizenship
+>                history rather than point-in-time citizenship
+>           (iii) Merges establishment identifiers and creates regional aggregates
+> 
+>         Input:
+>           ${orig}/liab_lm_9314_v1_pers.dta    — LIAB individual spells
+>           ${orig}/liab_lm_9314_v1_bhp_basis_v1.dta — LIAB establishment panel
+> 
+>         Output:
+>           ${data}/individual_level_liab.dta   — worker-establishment-year panel
+> 
+>         No output tables or figures are produced in this dofile.
+> */
+. 
+. clear
+
+. 
+. set more off
+
+. set matsize 10000
+set matsize ignored.
+    Matrix sizes are no longer limited by c(matsize) in modern Statas.  Matrix sizes are now limited by edition of
+    Stata.  See limits for more details.
+
+. set linesize 255
+
+. set seed 1234
+
+. 
+. 
+. cap adopath++ ${prog}
+
+. 
+. clear
+
+. 
+. 
+. use "${orig}/liab_lm_9314_v1_pers.dta", clear
+
+. cap label lang en
+
+. 
+. *Important line! keep one spell per worker and remove duplicates
+. keep if begepi == begorig
+(121,340 observations deleted)
+
+. 
+. drop if betnr==.n
+(0 observations deleted)
+
+. 
+. gen jahr=year( begorig)
+
+. 
+. 
+. ***********************Removing duplicate observations and calculating total income per worker-establishment
+. 
+. 
+. *Create occupation dummies
+. gen occ=beruf_gr
+(383,599 missing values generated)
+
+. 
+. *Drop observations with wage equal to 0
+. drop if tentgelt_orig==0
+(64,103 observations deleted)
+
+. 
+. *Keep only full time employment, part-time employment or trainees
+. keep if erwstat_gr==1 | erwstat_gr==2 | erwstat_gr==3
+(52,220 observations deleted)
+
+. 
+. 
+. *Group citizenship variable
+. gen citizenship=1 if german==1
+(339,761 missing values generated)
+
+. replace citizenship=2 if eu_orig1==1
+(30,505 real changes made)
+
+. replace citizenship=3 if eu_orig2==1
+(35,016 real changes made)
+
+. replace citizenship=4 if eu_2000==1
+(38,836 real changes made)
+
+. replace citizenship=5 if turkey==1
+(40,329 real changes made)
+
+. replace citizenship=6 if yugoslavia==1
+(31,608 real changes made)
+
+. replace citizenship=7 if europe_other==1
+(48,450 real changes made)
+
+. replace citizenship=8 if asia==1
+(39,819 real changes made)
+
+. replace citizenship=9 if africa_me==1
+(32,208 real changes made)
+
+. replace citizenship=10 if americas==1
+(27,337 real changes made)
+
+. 
+. 
+. 
+. *Remove duplicated observations
+. 
+. *First keep highest daily wage (tentgelt_orig) across duplicated observations.
+. bysort persnr betnr begorig endorig: egen tent_dup=max(tentgelt_orig)
+(60 missing values generated)
+
+. replace tentgelt_orig=tent_dup
+(2,859,477 real changes made)
+
+. 
+. replace tentgelt_gr=round(tentgelt_orig)
+(685,285 real changes made)
+
+. 
+. duplicates drop persnr betnr begorig endorig, force
+
+Duplicates in terms of persnr betnr begorig endorig
+
+(5,330 observations deleted)
+
+. 
+. 
+. 
+. *Number of days in establishment
+. gen work_days=endorig-begorig
+
+. bysort persnr betnr jahr: egen tot_days=sum(work_days)
+
+. 
+. 
+. *Some establishments report several entries for the same worker, ends up adding more than 365 work days for workers. We correct for that below.
+. gen share_in_estab=tot_days/360
+
+. replace share_in_estab=1 if share_in_estab>1
+(1,659,899 real changes made)
+
+. 
+. 
+. 
+. 
+. *Total earnings
+. gen earn1=work_days*tentgelt_orig
+(60 missing values generated)
+
+. 
+. bysort persnr betnr jahr: egen tot_earn1=sum(earn1)
+
+. 
+. replace tot_earn1=tot_earn1*365/tot_days if tot_days>365
+(56,836 real changes made)
+
+. 
+. replace tot_days=365 if tot_days>=365
+(56,836 real changes made)
+
+. 
+. *Calculate adjusted daily wage
+. gen daily_wage=tot_earn/tot_days
+(6,150 missing values generated)
+
+. 
+. 
+. 
+. *Leave one observation per establishment-individual-year
+. 
+. /* Sometimes individuals have multiple observations per establishment-year because they report different
+> occupation (occ), education (ausbildung), birthdate (gebjahr), citizenship or employment type (part-time, fulltime etc).
+> 
+> Below we keep the main observation for each of those variables before dropping the duplicates.
+> */
+. 
+. bysort persnr betnr jahr: egen occ1=mode(occ), maxmode
+warning: For at least one group, occ contains all missing values. Generating missing values for the modes in these groups. Use option missing to treat missing values as a category.
+(351,208 missing values generated)
+
+. replace occ=occ1
+(30,038 real changes made)
+
+. 
+. bysort persnr betnr jahr: egen bild1=mode(ausbildung), maxmode
+warning: For at least one group, ausbildung contains all missing values. Generating missing values for the modes in these groups. Use option missing to treat missing values as a category.
+(1,019,048 missing values generated)
+
+. replace ausbildung=bild1
+(35,880 real changes made)
+
+. 
+. bysort persnr betnr jahr: egen gebjahr1=mode(gebjahr), maxmode
+
+. replace gebjahr=gebjahr1
+(0 real changes made)
+
+. 
+. bysort persnr betnr jahr: egen nation_gr1=mode(citizenship), maxmode
+warning: For at least one group, citizenship contains all missing values. Generating missing values for the modes in these groups. Use option missing to treat missing values as a category.
+(15,653 missing values generated)
+
+. replace citizenship=nation_gr1
+(11 real changes made)
+
+. 
+. bysort persnr betnr jahr: egen erwstat1=mode(erwstat_gr), minmode
+
+. replace erwstat_gr=erwstat1
+(96,632 real changes made)
+
+. 
+. 
+. 
+. drop nation_gr1 bild1 occ1 gebjahr1 work_days earn1 erwstat1
+
+. 
+. duplicates drop persnr betnr jahr, force
+
+Duplicates in terms of persnr betnr jahr
+
+(338,983 observations deleted)
+
+. 
+. 
+. 
+. drop german eu_orig1 eu_orig2 eu_2000 turkey yugoslavia europe_other asia africa_me americas
+
+. 
+. 
+. gen german=(citizenship==1)
+
+. 
+. 
+. 
+. *************Defining Immigrants**************
+. 
+. /*
+> IMPORTANT: What is recorded in social security is citizenship, not country of birth. Also it is reported by the employer.
+> This generates some of the following:
+> 
+> Workers that grew up in Germany to foreign parents and who never change their citizenship show up as immigrants
+> Workers acquire citizenship and go from immigrant to german (selection into citizenship)
+> For some individuals, their reported citizenship depends on the employer (they go from german to some other citizenship when changing employers).
+> 
+> We want a consistent definition of immigrants that represents something closer to country of birth instead of citizenship. So in
+> the following lines we do some adjustments:
+> */
+. 
+. 
+. *Find when workers join the labor market
+. bysort persnr: egen rank=rank(begorig), unique
+
+. gen new_entrant=(rank==1)
+
+. 
+. *Calculate tenure at firm
+. 
+. bysort persnr betnr: egen tenure=rank(jahr), unique
+
+. 
+. 
+. *Data on college noisy sometimes, we want to classify workers as college vs non college so we choose the most likely observation.
+. gen college=(ausbildung==11 | ausbildung==12)
+
+. replace college=. if ausbildung==.z
+(0 real changes made)
+
+. bysort persnr: egen college1=mode(college), maxmode
+
+. 
+. 
+. gen age=jahr-gebjahr
+
+. 
+. 
+. 
+. *How many periods does the worker show up as german
+. bysort persnr: egen avg_german=mean(german) if citizenship!=.
+(13,880 missing values generated)
+
+. 
+. *Find those that through time show up as both german and non-german
+. gen citizenship_change=(avg_german>0 & avg_german<1 & citizenship!=.)
+
+. 
+. gen always_german=(avg_german==1)
+
+. 
+. 
+. *How many periods workers show up as immigrants
+. bysort persnr: egen imm_count1=sum(1-german) if citizenship!=.
+(13,880 missing values generated)
+
+. 
+. *Total periods
+. bysort persnr: egen total_count1=sum(1) if citizenship!=.
+(13,880 missing values generated)
+
+. 
+. *Impute imm_count1 for those observations where for some periods citizenship is missing
+. bysort persnr: egen imm_count=mean(imm_count1)
+(13,260 missing values generated)
+
+. 
+. *Impute total_count1 for those observations where for some periods citizenship is missing
+. bysort persnr: egen total_count=mean(total_count1)
+(13,260 missing values generated)
+
+. 
+. *Create nationality proxy. First with those that always show up as german.
+. gen nation_single=citizenship if always_german==1
+(304,228 missing values generated)
+
+. 
+. *Identify main citizenship group for those that sometime show up as foreign.
+. gen foreign_nation1=citizenship if citizenship!=1
+(2,515,085 missing values generated)
+
+. bysort persnr: egen foreign_nation=mode(foreign_nation1), minmode
+warning: For at least one group, foreign_nation1 contains all missing values. Generating missing values for the modes in these groups. Use option missing to treat missing values as a category.
+(2,513,538 missing values generated)
+
+. 
+. *If you show up more than one period as a non-german citizen, impute that foreign citizenship
+. replace nation_single=foreign_nation if ((imm_count>1) | (imm_count==1 & total_count==1)) & imm_count!=.
+(289,916 real changes made)
+
+. 
+. *Count as German if you show up as a foreign citizenship just one period but work more than one period (might be data error)
+. replace nation_single=1 if imm_count==1 & total_count>1
+(432 real changes made)
+
+. 
+. *Some cases remaining where we just count them as german as long as they report german for at least one period.
+. replace nation_single=1 if nation_single==. & avg_german!=0
+(13,880 real changes made)
+
+. 
+. 
+. *Age at which you join the labor market
+. bysort persnr: egen year_first=min(jahr)
+
+. gen age_first=year_first-gebjahr
+
+. 
+. 
+. *More narrow definition: Remove those who seem to be immigrants but join the labor market too early (likely grew up in germany to foreign parents or studied in Germany)
+. gen nation_single_alt=nation_single
+
+. gen immigrant_not_enter=(nation_single_alt!=1 & ((age_first<=19 & college1==0) | (age_first<=25 & college1==1)))
+
+. *Assumption: assign no nationality to those cases
+. replace nation_single_alt=. if immigrant_not_enter==1
+(136,965 real changes made, 136,965 to missing)
+
+. 
+. 
+. 
+. 
+. *Create establishment level aggregates - with full establishment employment
+. 
+. drop german
+
+. 
+. *Create dummies by nationality - using broad definition (not dropping those who enter young). Results robust to using the narrow definition.
+. gen german=(nation_single==1)
+
+. gen eu_orig1=(nation_single==2)
+
+. gen eu_orig2=(nation_single==3)
+
+. gen eu_2000=(nation_single==4)
+
+. gen turkey=(nation_single==5)
+
+. gen yugoslavia=(nation_single==6)
+
+. gen europe_other=(nation_single==7)
+
+. gen asia=(nation_single==8)
+
+. gen africa_me=(nation_single==9)
+
+. gen americas=(nation_single==10)
+
+. 
+. 
+. 
+. 
+. *label drop nationality
+. label def nation_single 1 "German" 2 "EU Original 1" 3 "EU Original 1" 4 "EU 2000" 5 "Turkey" 6 "Yugoslavia" 7 "Europe non EU" 8 "Asia" 9 "Africa & ME" 10 "Americas"
+
+. label val nation_single nation_single
+
+. 
+. label val occ beruf_gr_en
+
+. 
+. 
+. 
+. ***********************Collapse variables at the establishment level
+. 
+. *Merge number of employees (az_ges), 3-digit industry (w93_3_gen), district (ao_kreis), grd_jahr (first year in data), lzt_jahr (last year in data), te_imp_mw (median wage in establishment)
+. merge m:1 betnr jahr using "${orig}/liab_lm_9314_v1_bhp_basis_v1.dta", keepusing(w93_3_gen az_ges ao_kreis grd_jahr lzt_jahr te_imp_mw)
+(variable betnr was long, now double to accommodate using data's values)
+(variable jahr was float, now double to accommodate using data's values)
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                       269,222
+        from master                   264,676  (_merge==1)
+        from using                      4,546  (_merge==2)
+
+    Matched                         2,539,210  (_merge==3)
+    -----------------------------------------
+
+. drop if _m!=3
+(269,222 observations deleted)
+
+. drop _m
+
+. 
+. label val w93_3_gen w93_3_gen_en
+
+. 
+. bysort persnr jahr: egen max_income=max(tot_earn1)
+
+. gen main_obs=(tot_earn1==max_income)
+
+. 
+. 
+. 
+. *generate blossfeld occupation groups
+. 
+. gen manual=((occ>=1 & occ<=54) | (occ>=56 & occ<=58))
+
+. gen service=((occ>=72 & occ<=79) | (occ>=55 & occ<=56) | (occ>=80 & occ<=86) | (occ>=90 & occ<=98) | (occ>=114 & occ<=120))
+
+. gen professional=((occ>=59 & occ<=71) | (occ>=99 & occ<=113) | (occ>=87 & occ<=89))
+
+. 
+. gen occ_broad=1 if manual==1
+(2,485,401 missing values generated)
+
+. replace occ_broad=2 if service==1
+(1,168 real changes made)
+
+. replace occ_broad=3 if professional==1
+(8,048 real changes made)
+
+. 
+. gen tot=1
+
+. 
+. drop if ao_kreis==.
+(270 observations deleted)
+
+. 
+. 
+. *First, calculate aggregates at the regional level by nationality and occupation group.
+. *The aggregation is using wage bill, not worker counts. (Wage bill says something about the skills - effective units of each worker).
+. 
+. foreach x of varlist tot german eu_orig1 eu_orig2 eu_2000 turkey yugoslavia europe_other asia africa_me americas {
+  2. 
+. foreach y of varlist tot manual service professional college {
+  3. 
+. 
+. 
+. bysort jahr ao_kreis: egen kreis_`x'_`y'=sum(tot_earn1*`x'*`y')
+  4. bysort jahr: egen year_`x'_`y'=sum(tot_earn1*`x'*`y')
+  5. 
+. 
+. }
+  6. }
+
+. 
+. 
+. *****Save disaggregated data
+. 
+. save "${data}/individual_level_liab.dta", replace
+file /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/data/individual_level_liab.dta saved
+
+. 
+. 
+. log close
+      name:  <unnamed>
+       log:  /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/log/1_cleaning_data.log
+  log type:  text
+ closed on:   9 Sep 2026, 15:07:05
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

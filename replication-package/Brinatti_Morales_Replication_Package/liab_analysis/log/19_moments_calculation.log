@@ -1,0 +1,792 @@
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/log/19_moments_calculation.log
+  log type:  text
+ opened on:   9 Sep 2026, 16:00:23
+
+. 
+. * SMM calibration moments and demand elasticity sigma
+. * Agostina Brinatti & Nicolas Morales
+. * Source data: LIAB Longitudinal Model (version 1993-2014), IAB
+. 
+. /*      This dofile computes all empirical moments used for SMM calibration
+>         (Table 1 / Table C7) and the demand elasticity sigma used in Section 5.1.
+> 
+>         Output tables in this dofile:
+>           Table 1  - Section 5.1: Demand elasticities sigma_d and sigma_x
+>           Table 2  - Moment 1: Revenue variance conditional on immigrant share
+>           Table 3  - Moments 2-3: Aggregate and average immigrant share
+>           Table 4  - Moment 4: Variance of log immigrant-to-native wage bill ratio
+>           Table 5  - Moment 5: Share of firms hiring immigrants
+>           Table 6  - Moment 6: Share of firms exporting
+>           Table 7  - Moment 7: Export-to-domestic revenue ratio
+>           Table 8 - Moment 8: Immigrant share by wage-bill decile
+> 
+>         FDZ note: For each weighted statistic the immediately preceding output
+>           is the unweighted equivalent so cell counts can be verified (§4.5).
+>           Dummy variables (mig_D, trade) include both N and mean so both
+>           categories can be verified to have >= 20 observations (§4.3).
+> */
+. 
+. 
+. /*
+> 
+> input dataset:
+> (i) "establishment_level_liab".
+> 
+> This dofile creates compute moments to be used for calibration, including the elasticity of substitution across varieties.
+> It also computes the moments for the external validation.
+> 
+> */
+. 
+. 
+. clear
+
+. 
+. set more off
+
+. set matsize 10000
+set matsize ignored.
+    Matrix sizes are no longer limited by c(matsize) in modern Statas.  Matrix sizes are now limited by edition of Stata.  See limits for more details.
+
+. set linesize 255
+
+. set seed 1234
+
+. 
+. 
+. capture adopath++ ${prog}
+
+. 
+. 
+. use "${data}/establishment_level_liab.dta", clear
+
+. 
+. keep if jahr>=2003 & jahr<=2011
+(0 observations deleted)
+
+. label val w93_3_gen w93_3_gen_en
+
+. 
+. 
+. 
+. *Dependent variables
+. 
+. gen logrevenues=log(turnover)
+(6,288 missing values generated)
+
+. gen logexprevenues=log(1+turnover*(exports_foreign/100))
+(6,628 missing values generated)
+
+. replace logexprevenues=. if exports_foreign==.
+(0 real changes made)
+
+. 
+. gen logdomrevenues=log(1+turnover*(1-(exports_foreign/100)))
+(6,628 missing values generated)
+
+. replace logdomrevenues=. if exports_foreign==.
+(0 real changes made)
+
+. 
+. gen trade=(exports_foreign>0)
+
+. replace trade=. if exports_foreign==.
+(3,100 real changes made, 3,100 to missing)
+
+. 
+. 
+. *size is the variable for the interaction term
+. 
+. gen share_mig_firm2_t=(wbill_tot_tot-wbill_german_tot)/wbill_tot_tot
+(2 missing values generated)
+
+. 
+. *Generating some new variables
+. 
+. gen mbill_tot_tot= turnover*(int_inputs/100)
+(7,950 missing values generated)
+
+. gen markup1 = turnover/(wbill_tot_tot + mbill_tot_tot)
+(7,950 missing values generated)
+
+. gen markdown1 = 1/markup1
+(7,950 missing values generated)
+
+. 
+. *-------------------------------------------------------------------------------
+. *       Estimation of sigma and sigma_x as done for the test of epsilon>sigma
+. *-------------------------------------------------------------------------------
+. 
+. preserve 
+
+. 
+. keep if emp_tot_tot>=10 
+(4,335 observations deleted)
+
+. 
+. *Estimate sigma for all firms           
+. 
+. ****************************
+. * Table 1
+. * Section 5.1: Demand elasticities sigma_d and sigma_x
+. ****************************
+. 
+. * Variables: markup1 (= revenue / (wage bill + material costs));
+. *   markdown1 (= 1/markup1); exports_foreign (export share, 0-100)
+. * sigma_d = markup_d / (markup_d - 1) from NT average markup (eq. 17)
+. * sigma_x inferred from exporters' markdown gap in tradable sector
+. * Selection: establishments >= 10 employees; sigma_d from tradeable3=0;
+. *   sigma_x from tradeable3=1, exports_foreign > 0
+. * FDZ: unweighted stats shown first, then survey-weighted
+. *   estimates reported via sum after each block.
+. 
+. quietly reghdfe   markup1 [fw=weight_survey] , noabsorb /**/
+
+.                 gen sigma    = _b[_cons]/(_b[_cons] - 1) /**/
+
+. 
+. *Estimate sigma of non tradeable
+. quietly reghdfe  markup1        [fw=weight_survey]      if  tradeable3==0  , noabsorb
+
+.                 gen markup1_d =  _b[_cons] /**/
+
+.                 gen sigma_d   = _b[_cons]/(_b[_cons] - 1) /**/
+
+.         
+. *Estimate the markdown of non-exporters and exporters in the tradeable sector
+. 
+. quietly reghdfe  markdown1 [fw=weight_survey] if  (exports_foreign==0 | missing(exports_foreign)) &  tradeable3==1 , noabsorb
+
+.         gen markdown1_d =  _b[_cons]
+
+. 
+. quietly reghdfe  markdown1 [fw=weight_survey] if (exports_foreign>0 & exports_foreign!=.) &  tradeable3==1 , noabsorb
+
+.         gen markdown1_e =  _b[_cons]
+
+.         
+. 
+. *Estimate the average export share in the tredeable sector for exporters
+. 
+. quietly reghdfe exports_foreign [fw=weight_survey] if (exports_foreign>0 & exports_foreign!=.) & tradeable3==1  , noabsorb /**/
+
+.         gen export_share =  _b[_cons]/100       
+
+.         
+.                 
+. *Estimate the markdown in RoW 
+. 
+.         gen markdown1_x =  ( markdown1_e - (1-export_share) * markdown1_d ) / export_share
+
+.         
+. *Estimate sigma_x and average sigma
+.         
+.         gen sigma_x = 1/(1-markdown1_x)
+
+.         gen sigma_avg = (1-export_share) * sigma_d + export_share * sigma_x
+
+.         
+. 
+.         
+.         
+. *Displaying sigma_x (RoW), sigma (domestic)
+. sum sigma_x sigma 
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+     sigma_x |     11,472    .1896776           0   .1896776   .1896776
+       sigma |     11,472    8.477744           0   8.477744   8.477744
+
+. 
+. 
+. *Displaying overall markup, non-tradable markup, export share 
+. 
+. ****************************
+. * Table 1 (supplement)
+. * Section 5.1: sigma components printed for reference
+. ****************************
+. 
+. * Variables: markup1 (revenue / factor costs), markdown1_d (NT non-exporter
+. *   markdown), export_share (exporter share in tradable sector), sigma_avg (average sigma in tradable sector)
+. * Selection: epsilon sample; survey-weighted means
+. * These support the sigma_d and sigma_x calculations in Table 1 above.
+. 
+. sum markup1  markdown1_d export_share  sigma_avg
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+     markup1 |      6,130    1.249494     1.33238   .0026433   17.31129
+ markdown1_d |     11,472    4.176048           0   4.176048   4.176048
+export_share |     11,472    .2636439           0   .2636439   .2636439
+   sigma_avg |     11,472     6.06681           0    6.06681    6.06681
+
+. 
+. restore 
+
+. 
+. 
+. gen share_mig_ratio = (1-share_mig_firm2_t)/share_mig_firm2_t
+(10,125 missing values generated)
+
+. gen mig_D = (share_mig_firm2_t>0)
+
+. gen l_share_mig_firm2_t = log(share_mig_firm2_t)
+(10,125 missing values generated)
+
+. 
+. 
+. 
+. ********************************************************************************
+. * Empirical moments for SMM
+. ********************************************************************************
+. 
+. 
+. *1) Revenue variability tradeable and non-tradeable sector
+. 
+. quietly reg logrevenues l_share_mig_firm2_t trade i.jahr i.local_labor11#c.jahr if tradeable3==1 & emp_tot_tot>=10
+
+. predict resid_T,r
+(12,314 missing values generated)
+
+. 
+. quietly reg logrevenues l_share_mig_firm2_t  trade i.jahr i.local_labor11#c.jahr if tradeable3==0 & emp_tot_tot>=10
+
+. predict resid_NT,r
+(12,314 missing values generated)
+
+. 
+. 
+. ****************************
+. * Table 2
+. * Table C7 Moment 1: Revenue variance conditional on immigrant share
+. ****************************
+. 
+. * Variables: resid_T / resid_NT (residuals from OLS of logrevenues on
+. *   l_share_mig_firm2_t, trade, year FE, local-labor-market x year FE)
+. * Selection: tradable (tradeable3=1) and non-tradable (tradeable3=0)
+. *   establishments >= 10 employees
+. * Moment identifies revenue dispersion sigma_eps in each sector.
+. * FDZ: unweighted sum shown first; survey-weighted follows.
+. 
+. sum resid_T if emp_tot_tot>=10 & tradeable3==1
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+     resid_T |      1,202   -1.01e-09    1.630447  -4.623766    4.08147
+
+. sum resid_T [fw=weight_survey] if emp_tot_tot>=10 & tradeable3==1
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+     resid_T |     70,509   -.2641023     1.67949  -4.623766    4.08147
+
+. 
+. 
+. sum resid_NT if emp_tot_tot>=10 & tradeable3==0
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+    resid_NT |      1,969    1.39e-09    1.746328    -4.5573   4.460669
+
+. sum resid_NT [fw=weight_survey] if emp_tot_tot>=10 & tradeable3==0
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+    resid_NT |    119,707   -.2532943    1.670655    -4.5573   4.460669
+
+. 
+. 
+. 
+. *2) Aggregate immigrant share tradeable and non tradeable
+. *3) Average immigrant share tradeable and non-tradeable
+. gen dom_share=wbill_german_tot/wbill_tot_tot
+(2 missing values generated)
+
+. 
+. 
+. 
+. ****************************
+. * Table 3
+. * Table C7 Moments 2-3: Aggregate and average immigrant share
+. ****************************
+. 
+. * Variables: wbill_german_tot (native wage bill), wbill_tot_tot (total wage bill)
+. * Moment 2 — Aggregate immigrant share: sum all immigrant and total wage bills
+. *   across firms within each sector, then compute 1 - (sum_native / sum_total).
+. *   This is the sector-level aggregate share, not an average of firm-level shares.
+. *   Identifies beta_k (distributional share parameter).
+. * Moment 3 — Average (within-establishment) immigrant share: mean of dom_share
+. *   across establishments. Identifies average firm-level immigrant intensity.
+. * Selection: establishments >= 10 employees; by sector (tradeable3)
+. * FDZ: unweighted shown first (N verifiable); survey-weighted follows.
+. 
+. * Moment 2: Aggregate immigrant share by sector (sum wage bills, then divide)
+. * Unweighted totals (N verifiable)
+. tabstat wbill_german_tot wbill_tot_tot if emp_tot_tot>=10, by(tradeable3) stat(sum count) nototal
+
+Summary statistics: Sum, N
+Group variable: tradeable3 
+
+tradeable3 |  wb~n_tot  wb~t_tot
+-----------+--------------------
+         0 |  4.54e+09  5.09e+09
+           |      7649      7649
+-----------+--------------------
+         1 |  2.06e+09  2.40e+09
+           |      3823      3823
+--------------------------------
+
+. * Survey-weighted totals
+. *FDZ: bysort + sum [fw=] gives weighted sums for aggregate share calculation
+. bysort tradeable3: sum wbill_german_tot wbill_tot_tot [fw=weight_survey] if emp_tot_tot>=10
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-> tradeable3 = 0
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+wbill_germ~t |    409,005      608240     1103205          0   3.02e+07
+wbill_tot_~t |    409,005    680344.2     1225839   2177.853   3.48e+07
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-> tradeable3 = 1
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+wbill_germ~t |    211,514    540525.8    613214.7          0    7794178
+wbill_tot_~t |    211,514      643622    985150.7   4358.625   2.05e+07
+
+
+. 
+. * Moment 3: Average (within-establishment) immigrant share by sector
+. * Unweighted
+. tabstat dom_share if emp_tot_tot>=10, by(tradeable3) stat(mean count) nototal
+
+Summary for variables: dom_share
+Group variable: tradeable3 
+
+tradeable3 |      Mean         N
+-----------+--------------------
+         0 |  .8881682      7649
+         1 |  .8986522      3823
+--------------------------------
+
+. * Survey-weighted
+. bysort tradeable3: sum dom_share [fw=weight_survey] if emp_tot_tot>=10
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-> tradeable3 = 0
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+   dom_share |    409,005     .886941    .2189259          0          1
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-> tradeable3 = 1
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+   dom_share |    211,514    .9055148    .1710347          0          1
+
+
+. 
+. 
+. *4) Variance of immigrant shares
+. 
+. gen log_share_dom = log(dom_share)
+(370 missing values generated)
+
+. gen log_transformation=log((1-dom_share)/dom_share)
+(10,493 missing values generated)
+
+. 
+. ****************************
+. * Table 4
+. * Table C7 Moment 4: Variance of log immigrant-to-native wage bill ratio
+. ****************************
+. 
+. * Variables: log_transformation (= log((1-dom_share)/dom_share),
+. *   i.e. log of immigrant-to-native wage bill ratio)
+. * Selection: establishments >= 10 employees; by sector (tradeable3)
+. * Moment identifies the dispersion of firm-level immigrant intensity.
+. * FDZ: unweighted sum shown first (N verifiable); survey-weighted follows.
+. 
+. sum  log_transformation if tradeable3==1 & emp_tot_tot>=10
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+log_transf~n |      1,853   -1.870769    1.597384  -9.414346   7.698536
+
+. sum  log_transformation [fw=weight_survey] if tradeable3==1 & emp_tot_tot>=10
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+log_transf~n |    102,554   -1.933759    1.545136  -9.414346   7.698536
+
+. 
+. sum  log_transformation if tradeable3==0 & emp_tot_tot>=10
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+log_transf~n |      3,044   -1.602382    1.808074  -10.49994   7.514291
+
+. sum  log_transformation [fw=weight_survey] if tradeable3==0 & emp_tot_tot>=10
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+log_transf~n |    168,450   -1.639409    1.825995  -10.49994   7.514291
+
+. 
+. 
+. 
+. ****************************
+. * Table 5
+. * Table C7 Moment 5: Share of firms hiring immigrants
+. ****************************
+. 
+. * Variables: mig_D (= 1 if share_mig_firm2_t > 0, i.e. firm has any immigrant
+. *   wage bill); both N and mean reported so each category can be verified
+. *   to have >= 20 observations (§4.3).
+. * Selection: establishments >= 10 employees; by sector (tradeable3)
+. * Moment identifies fixed cost of hiring immigrants f_m.
+. * FDZ: unweighted sum shown first (N verifiable); survey-weighted follows.
+. 
+. sum mig_D if tradeable3==1 & emp_tot_tot>=10
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+       mig_D |      3,823    .4883599    .4999299          0          1
+
+. sum mig_D [fw=weight_survey] if tradeable3==1 & emp_tot_tot>=10
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+       mig_D |    211,514    .4876982    .4998498          0          1
+
+. 
+. sum mig_D if tradeable3==0 & emp_tot_tot>=10
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+       mig_D |      7,649     .409596    .4917914          0          1
+
+. sum mig_D [fw=weight_survey] if tradeable3==0 & emp_tot_tot>=10
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+       mig_D |    409,005    .4228848    .4940181          0          1
+
+. 
+. ****************************
+. * Table 6
+. * Table C7 Moment 6: Share of firms exporting
+. ****************************
+. 
+. * Variables: trade (= 1 if exports_foreign > 0; missing if exports_foreign
+. *   missing); both N and mean reported so each category can be verified
+. *   to have >= 20 observations (§4.3).
+. * Selection: tradable establishments (tradeable3=1) >= 10 employees
+. * Moment identifies fixed export cost f_x.
+. * FDZ: unweighted sum shown first (N verifiable); survey-weighted follows.
+. 
+. sum trade if tradeable3==1 & emp_tot_tot>=10
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+       trade |      3,375     .205037    .4037885          0          1
+
+. sum trade [fw=weight_survey] if tradeable3==1 & emp_tot_tot>=10
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+       trade |    202,523    .1834211    .3870124          0          1
+
+. 
+. 
+. *7) Export to domestic revenues moments
+. gen export_to_dom_rev=(exports_foreign/100)/(1-(exports_foreign/100))
+(3,100 missing values generated)
+
+. 
+. gen export_rev=(exports_foreign/100)*turnover
+(6,628 missing values generated)
+
+. gen domestic_rev=(1-(exports_foreign/100))*turnover
+(6,628 missing values generated)
+
+. 
+. ****************************
+. * Table 7
+. * Table C7 Moment 7: Export-to-domestic revenue ratio (tradable exporters)
+. ****************************
+. 
+. * Variables: export_rev (= exports_foreign/100 * turnover),
+. *   domestic_rev (= (1 - exports_foreign/100) * turnover)
+. * Selection: tradable exporters (tradeable3=1, exports_foreign > 0),
+. *   establishments >= 10 employees
+. * Moment identifies iceberg trade cost tau.
+. * FDZ: unweighted table shown first; survey-weighted follows.
+. 
+. 
+. 
+. sum export_rev domestic_rev export_to_dom_rev if emp_tot_tot>=10 & tradeable3==1 & (exports_foreign>0 & exports_foreign!=.)
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+  export_rev |        468     2077496     3693634   315.7341   2.90e+07
+domestic_rev |        468     5476656     7535423   12454.57   4.57e+07
+export_to_~v |        692    .6145069    .9425171    .010101   6.692307
+
+. sum export_rev domestic_rev export_to_dom_rev [fw=weight_survey] if emp_tot_tot>=10 & tradeable3==1 & (exports_foreign>0 & exports_foreign!=.)
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+  export_rev |     25,650     1808946     3292368   315.7341   2.90e+07
+domestic_rev |     25,650     4507663     6722937   12454.57   4.57e+07
+export_to_~v |     37,147    .6196637    .9319005    .010101   6.692307
+
+. 
+. 
+. 
+. 
+. 
+. 
+. *10) Mean sd percentile 90 - Mean sd percentile 50, T and NT
+. xtile decile_wbill=wbill_tot_tot if emp_tot_tot>=10, nq(10)
+
+. xtile decile_emp=emp_tot_tot if emp_tot_tot>=10, nq(10)
+
+. xtile decile_rev=turnover if emp_tot_tot>=10, nq(10)
+
+. 
+. xtile decile_wbill_weight=wbill_tot_tot if emp_tot_tot>=10 [fw=weight_survey], nq(10)
+
+. xtile decile_emp_weight=emp_tot_tot if emp_tot_tot>=10 [fw=weight_survey], nq(10)
+
+. xtile decile_rev_weight=turnover if emp_tot_tot>=10 [fw=weight_survey], nq(10)
+
+. 
+. xtile full_dec_wbill=wbill_tot_tot, nq(10)
+
+. xtile full_dec_emp=emp_tot_tot, nq(10)
+
+. xtile full_dec_rev=turnover, nq(10)
+
+. 
+. xtile full_dec_wbill_weight=wbill_tot_tot [fw=weight_survey], nq(10)
+
+. xtile full_dec_emp_weight=emp_tot_tot [fw=weight_survey], nq(10)
+
+. xtile full_dec_rev_weight=turnover [fw=weight_survey], nq(10)
+
+. 
+. 
+. *Create deciles separately by sector
+. 
+. xtile decile_wbill_T=wbill_tot_tot if tradeable3==1 & emp_tot_tot>=10, nq(10)
+
+. xtile decile_wbill_NT=wbill_tot_tot if tradeable3==0 & emp_tot_tot>=10, nq(10)
+
+. 
+. 
+. 
+. 
+. gen mig_share=1-dom_share
+(2 missing values generated)
+
+. 
+. ****************************
+. * Table 8
+. * Moment 8: Immigrant share by wage-bill decile
+. ****************************
+. 
+. * Variables: mig_share (= 1 - dom_share = immigrant wage-bill share),
+. *   decile_wbill (unweighted decile of wbill_tot_tot among emp>=10 firms),
+. *   decile_wbill_T / decile_wbill_NT (sector-specific deciles)
+. * Selection: establishments >= 10 employees; full sample then by sector
+. * Validates that model replicates the positive gradient of immigrant share
+. *   across the firm wage-bill distribution (Figure C7).
+. * FDZ: unweighted tabstat shown first (N in stat(count) verifiable);
+. *   survey-weighted bysort sum follows.
+. 
+. *FDZ: table...stat() replaced for Stata 16 compatibility
+. 
+. * mig_share = (wbill_tot_tot - wbill_german_tot) / wbill_tot_tot
+. * FDZ: display unweighted numerator and denominator sums per decile before
+. * the weighted mean share, so absolute counts are verifiable (Guidelines §4.5).
+. 
+. * --- Tradable sector ---
+. * Unweighted N and absolute wage-bill sums (numerator + denominator of mig_share)
+. gen wbill_imm_tot = wbill_tot_tot - wbill_german_tot
+
+. 
+. tabstat wbill_imm_tot wbill_tot_tot if emp_tot_tot>=10 & tradeable3==1, ///
+>     by(decile_wbill) stat(sum n) nototal
+
+Summary statistics: Sum, N
+Group variable: decile_wbill (10 quantiles of wbill_tot_tot )
+
+decile_wbill |  wb~m_tot  wb~t_tot
+-------------+--------------------
+           1 |   1442475  1.87e+07
+             |       326       326
+-------------+--------------------
+           2 |   4471868  4.76e+07
+             |       358       358
+-------------+--------------------
+           3 |   7140504  7.67e+07
+             |       388       388
+-------------+--------------------
+           4 |   8461182  9.73e+07
+             |       364       364
+-------------+--------------------
+           5 |  1.36e+07  1.21e+08
+             |       355       355
+-------------+--------------------
+           6 |  1.60e+07  1.65e+08
+             |       374       374
+-------------+--------------------
+           7 |  2.39e+07  2.25e+08
+             |       388       388
+-------------+--------------------
+           8 |  4.37e+07  3.94e+08
+             |       520       520
+-------------+--------------------
+           9 |  4.79e+07  4.67e+08
+             |       451       451
+-------------+--------------------
+          10 |  1.79e+08  7.87e+08
+             |       299       299
+----------------------------------
+
+. * Unweighted mean share (N verifiable via count above)
+. tabstat mig_share if emp_tot_tot>=10 & tradeable3==1, by(decile_wbill) stat(mean count) nototal
+
+Summary for variables: mig_share
+Group variable: decile_wbill (10 quantiles of wbill_tot_tot )
+
+decile_wbill |      Mean         N
+-------------+--------------------
+           1 |  .0752213       326
+           2 |  .0943429       358
+           3 |  .0910764       388
+           4 |  .0857978       364
+           5 |   .112908       355
+           6 |  .0960984       374
+           7 |  .1049557       388
+           8 |  .1107303       520
+           9 |  .1033221       451
+          10 |  .1393434       299
+----------------------------------
+
+. * Survey-weighted mean share
+. tabstat mig_share [fw=weight_survey] if emp_tot_tot>=10 & tradeable3==1, by(decile_wbill) stat(mean) nototal
+
+Summary for variables: mig_share
+Group variable: decile_wbill (10 quantiles of wbill_tot_tot )
+
+decile_wbill |      Mean
+-------------+----------
+           1 |  .0603136
+           2 |   .074319
+           3 |  .0699967
+           4 |  .0766992
+           5 |  .1142024
+           6 |  .0834061
+           7 |  .1033663
+           8 |  .1118865
+           9 |  .0999574
+          10 |  .1466052
+------------------------
+
+. 
+. * --- Non-tradable sector ---
+. tabstat wbill_imm_tot wbill_tot_tot if emp_tot_tot>=10 & tradeable3==0, ///
+>     by(decile_wbill) stat(sum n) nototal
+
+Summary statistics: Sum, N
+Group variable: decile_wbill (10 quantiles of wbill_tot_tot )
+
+decile_wbill |  wb~m_tot  wb~t_tot
+-------------+--------------------
+           1 |   4986180  4.63e+07
+             |       822       822
+-------------+--------------------
+           2 |  1.10e+07  1.04e+08
+             |       789       789
+-------------+--------------------
+           3 |  1.72e+07  1.51e+08
+             |       759       759
+-------------+--------------------
+           4 |  2.31e+07  2.06e+08
+             |       783       783
+-------------+--------------------
+           5 |  3.30e+07  2.71e+08
+             |       792       792
+-------------+--------------------
+           6 |  4.07e+07  3.43e+08
+             |       774       774
+-------------+--------------------
+           7 |  4.57e+07  4.36e+08
+             |       759       759
+-------------+--------------------
+           8 |  6.07e+07  4.73e+08
+             |       627       627
+-------------+--------------------
+           9 |  7.81e+07  7.45e+08
+             |       696       696
+-------------+--------------------
+          10 |  2.31e+08  2.31e+09
+             |       848       848
+----------------------------------
+
+. tabstat mig_share if emp_tot_tot>=10 & tradeable3==0, by(decile_wbill) stat(mean count) nototal
+
+Summary for variables: mig_share
+Group variable: decile_wbill (10 quantiles of wbill_tot_tot )
+
+decile_wbill |      Mean         N
+-------------+--------------------
+           1 |  .1099465       822
+           2 |  .1080271       789
+           3 |  .1139652       759
+           4 |   .111823       783
+           5 |  .1206636       792
+           6 |  .1175977       774
+           7 |  .1045825       759
+           8 |  .1286626       627
+           9 |  .1062266       696
+          10 |  .1004306       848
+----------------------------------
+
+. tabstat mig_share [fw=weight_survey] if emp_tot_tot>=10 & tradeable3==0, by(decile_wbill) stat(mean) nototal
+
+Summary for variables: mig_share
+Group variable: decile_wbill (10 quantiles of wbill_tot_tot )
+
+decile_wbill |      Mean
+-------------+----------
+           1 |  .1220241
+           2 |  .1058122
+           3 |  .1200718
+           4 |  .1312108
+           5 |  .1088125
+           6 |  .1028361
+           7 |  .1081003
+           8 |  .1324154
+           9 |  .1107403
+          10 |  .0944047
+------------------------
+
+. 
+. 
+. 
+. 
+. 
+. log close
+      name:  <unnamed>
+       log:  /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/log/19_moments_calculation.log
+  log type:  text
+ closed on:   9 Sep 2026, 16:00:25
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

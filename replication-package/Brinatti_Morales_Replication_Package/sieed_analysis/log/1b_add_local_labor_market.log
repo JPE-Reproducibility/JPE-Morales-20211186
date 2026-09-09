@@ -1,0 +1,1289 @@
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/sieed_analysis/log/1b_add_local_labor_market.log
+  log type:  text
+ opened on:   9 Sep 2026, 16:00:43
+
+. 
+. 
+. ****************************Analysis on individual hiring countries****************
+. 
+. 
+. use "${data}/individual_level_sieed.dta", clear
+
+. 
+. 
+. * Merge in the BHP establishment file to obtain the district identifier
+. * (ao_kreis) and industry code (w93_3_gen) for each establishment-year.
+. merge m:1 betnr jahr using "${orig}/SIEED_7518_v1_bhp_basis_v1.dta", keepusing(ao_kreis w93_3_gen)
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                       293,767
+        from master                   155,561  (_merge==1)
+        from using                    138,206  (_merge==2)
+
+    Matched                           369,935  (_merge==3)
+    -----------------------------------------
+
+. drop if _m!=3
+(293,767 observations deleted)
+
+. drop _m
+
+. 
+. 
+. * Retain one row per distinct Kreis present in the SIEED sample.
+. keep ao_kreis
+
+. duplicates drop ao_kreis, force
+
+Duplicates in terms of ao_kreis
+
+(369,533 observations deleted)
+
+. 
+. gen local_labor=.
+(402 missing values generated)
+
+. 
+. 
+. *-------------------------------------------------------------------------------
+. * Kreis-to-local-labor-market mapping
+. *
+. * Each replace statement assigns the Kreis (ao_kreis) to its parent local
+. * labor market area (local_labor) following Kropp and Schwengler (2011).
+. * The local_labor identifier is the Kreis code of the anchor city or district
+. * of the functional labor market area. All Kreise in Germany that appear in
+. * the SIEED are covered; the final sum command verifies that no Kreis is left
+. * unassigned (local_labor==.).
+. *-------------------------------------------------------------------------------
+. 
+. replace local_labor=1001000 if ao_kreis==1001
+(1 real change made)
+
+. replace local_labor=1002000 if ao_kreis==1002
+(1 real change made)
+
+. replace local_labor=1003000 if ao_kreis==1003
+(1 real change made)
+
+. replace local_labor=1002000 if ao_kreis==1004
+(1 real change made)
+
+. replace local_labor=2000000 if ao_kreis==1051
+(1 real change made)
+
+. replace local_labor=2000000 if ao_kreis==1053
+(1 real change made)
+
+. replace local_labor=1001000 if ao_kreis==1054
+(1 real change made)
+
+. replace local_labor=1003000 if ao_kreis==1055
+(1 real change made)
+
+. replace local_labor=2000000 if ao_kreis==1056
+(1 real change made)
+
+. replace local_labor=1002000 if ao_kreis==1057
+(1 real change made)
+
+. replace local_labor=1002000 if ao_kreis==1058
+(1 real change made)
+
+. replace local_labor=1001000 if ao_kreis==1059
+(1 real change made)
+
+. replace local_labor=2000000 if ao_kreis==1060
+(1 real change made)
+
+. replace local_labor=2000000 if ao_kreis==1061
+(1 real change made)
+
+. replace local_labor=2000000 if ao_kreis==1062
+(1 real change made)
+
+. replace local_labor=2000000 if ao_kreis==2000
+(1 real change made)
+
+. replace local_labor=3101000 if ao_kreis==3101
+(1 real change made)
+
+. replace local_labor=3101000 if ao_kreis==3102
+(1 real change made)
+
+. replace local_labor=3103000 if ao_kreis==3103
+(1 real change made)
+
+. replace local_labor=3103000 if ao_kreis==3151
+(1 real change made)
+
+. replace local_labor=3152012 if ao_kreis==3152
+(0 real changes made)
+
+. replace local_labor=3101000 if ao_kreis==3153
+(1 real change made)
+
+. replace local_labor=3103000 if ao_kreis==3154
+(1 real change made)
+
+. replace local_labor=3152012 if ao_kreis==3155
+(1 real change made)
+
+. replace local_labor=3152012 if ao_kreis==3156
+(0 real changes made)
+
+. replace local_labor=3101000 if ao_kreis==3157
+(1 real change made)
+
+. replace local_labor=3101000 if ao_kreis==3158
+(1 real change made)
+
+. replace local_labor=3241001 if ao_kreis==3241
+(1 real change made)
+
+. replace local_labor=4011000 if ao_kreis==3251
+(1 real change made)
+
+. replace local_labor=3241001 if ao_kreis==3252
+(1 real change made)
+
+. replace local_labor=3254021 if ao_kreis==3254
+(1 real change made)
+
+. replace local_labor=5774032 if ao_kreis==3255
+(1 real change made)
+
+. replace local_labor=3241001 if ao_kreis==3256
+(1 real change made)
+
+. replace local_labor=3241001 if ao_kreis==3257
+(1 real change made)
+
+. replace local_labor=3241001 if ao_kreis==3351
+(1 real change made)
+
+. replace local_labor=4012000 if ao_kreis==3352
+(1 real change made)
+
+. replace local_labor=2000000 if ao_kreis==3353
+(1 real change made)
+
+. replace local_labor=2000000 if ao_kreis==3354
+(1 real change made)
+
+. replace local_labor=2000000 if ao_kreis==3355
+(1 real change made)
+
+. replace local_labor=4011000 if ao_kreis==3356
+(1 real change made)
+
+. replace local_labor=4011000 if ao_kreis==3357
+(1 real change made)
+
+. replace local_labor=3241001 if ao_kreis==3358
+(1 real change made)
+
+. replace local_labor=2000000 if ao_kreis==3359
+(1 real change made)
+
+. replace local_labor=2000000 if ao_kreis==3360
+(1 real change made)
+
+. replace local_labor=4011000 if ao_kreis==3361
+(1 real change made)
+
+. replace local_labor=4011000 if ao_kreis==3401
+(1 real change made)
+
+. replace local_labor=3402000 if ao_kreis==3402
+(1 real change made)
+
+. replace local_labor=3403000 if ao_kreis==3403
+(1 real change made)
+
+. replace local_labor=3404000 if ao_kreis==3404
+(1 real change made)
+
+. replace local_labor=3403000 if ao_kreis==3405
+(1 real change made)
+
+. replace local_labor=3403000 if ao_kreis==3451
+(1 real change made)
+
+. replace local_labor=3402000 if ao_kreis==3452
+(1 real change made)
+
+. replace local_labor=3403000 if ao_kreis==3453
+(1 real change made)
+
+. replace local_labor=3454041 if ao_kreis==3454
+(1 real change made)
+
+. replace local_labor=3403000 if ao_kreis==3455
+(1 real change made)
+
+. replace local_labor=5515000 if ao_kreis==3456
+(1 real change made)
+
+. replace local_labor=3402000 if ao_kreis==3457
+(1 real change made)
+
+. replace local_labor=4011000 if ao_kreis==3458
+(1 real change made)
+
+. replace local_labor=3404000 if ao_kreis==3459
+(1 real change made)
+
+. replace local_labor=3460006 if ao_kreis==3460
+(1 real change made)
+
+. replace local_labor=3403000 if ao_kreis==3461
+(1 real change made)
+
+. replace local_labor=3402000 if ao_kreis==3462
+(1 real change made)
+
+. replace local_labor=4011000 if ao_kreis==4011
+(1 real change made)
+
+. replace local_labor=4012000 if ao_kreis==4012
+(1 real change made)
+
+. replace local_labor=5111000 if ao_kreis==5111
+(1 real change made)
+
+. replace local_labor=5113000 if ao_kreis==5112
+(1 real change made)
+
+. replace local_labor=5113000 if ao_kreis==5113
+(1 real change made)
+
+. replace local_labor=5111000 if ao_kreis==5114
+(1 real change made)
+
+. replace local_labor=5116000 if ao_kreis==5116
+(1 real change made)
+
+. replace local_labor=5113000 if ao_kreis==5117
+(1 real change made)
+
+. replace local_labor=5113000 if ao_kreis==5119
+(1 real change made)
+
+. replace local_labor=5111000 if ao_kreis==5120
+(1 real change made)
+
+. replace local_labor=5111000 if ao_kreis==5122
+(1 real change made)
+
+. replace local_labor=5111000 if ao_kreis==5124
+(1 real change made)
+
+. replace local_labor=5154036 if ao_kreis==5154
+(1 real change made)
+
+. replace local_labor=5111000 if ao_kreis==5158
+(1 real change made)
+
+. replace local_labor=5111000 if ao_kreis==5162
+(1 real change made)
+
+. replace local_labor=5111000 if ao_kreis==5166
+(1 real change made)
+
+. replace local_labor=5113000 if ao_kreis==5170
+(1 real change made)
+
+. replace local_labor=5315000 if ao_kreis==5314
+(1 real change made)
+
+. replace local_labor=5315000 if ao_kreis==5315
+(1 real change made)
+
+. replace local_labor=5315000 if ao_kreis==5316
+(1 real change made)
+
+. replace local_labor=5334002 if ao_kreis==5334
+(1 real change made)
+
+. replace local_labor=5358008 if ao_kreis==5358
+(1 real change made)
+
+. replace local_labor=5315000 if ao_kreis==5362
+(1 real change made)
+
+. replace local_labor=5315000 if ao_kreis==5366
+(1 real change made)
+
+. replace local_labor=5116000 if ao_kreis==5370
+(1 real change made)
+
+. replace local_labor=5374012 if ao_kreis==5374
+(1 real change made)
+
+. replace local_labor=5315000 if ao_kreis==5378
+(1 real change made)
+
+. replace local_labor=5315000 if ao_kreis==5382
+(1 real change made)
+
+. replace local_labor=5113000 if ao_kreis==5512
+(1 real change made)
+
+. replace local_labor=5113000 if ao_kreis==5513
+(1 real change made)
+
+. replace local_labor=5515000 if ao_kreis==5515
+(1 real change made)
+
+. replace local_labor=5554020 if ao_kreis==5554
+(1 real change made)
+
+. replace local_labor=5515000 if ao_kreis==5558
+(1 real change made)
+
+. replace local_labor=5113000 if ao_kreis==5562
+(1 real change made)
+
+. replace local_labor=5515000 if ao_kreis==5566
+(1 real change made)
+
+. replace local_labor=5515000 if ao_kreis==5570
+(1 real change made)
+
+. replace local_labor=5711000 if ao_kreis==5711
+(1 real change made)
+
+. replace local_labor=5711000 if ao_kreis==5754
+(1 real change made)
+
+. replace local_labor=5758004 if ao_kreis==5758
+(1 real change made)
+
+. replace local_labor=5774032 if ao_kreis==5762
+(1 real change made)
+
+. replace local_labor=5766020 if ao_kreis==5766
+(1 real change made)
+
+. replace local_labor=5770024 if ao_kreis==5770
+(1 real change made)
+
+. replace local_labor=5774032 if ao_kreis==5774
+(1 real change made)
+
+. replace local_labor=5113000 if ao_kreis==5911
+(1 real change made)
+
+. replace local_labor=5113000 if ao_kreis==5913
+(1 real change made)
+
+. replace local_labor=5113000 if ao_kreis==5914
+(1 real change made)
+
+. replace local_labor=5113000 if ao_kreis==5915
+(1 real change made)
+
+. replace local_labor=5113000 if ao_kreis==5916
+(1 real change made)
+
+. replace local_labor=5113000 if ao_kreis==5954
+(1 real change made)
+
+. replace local_labor=5958004 if ao_kreis==5958
+(1 real change made)
+
+. replace local_labor=5962032 if ao_kreis==5962
+(1 real change made)
+
+. replace local_labor=5970040 if ao_kreis==5966
+(1 real change made)
+
+. replace local_labor=5970040 if ao_kreis==5970
+(1 real change made)
+
+. replace local_labor=5958004 if ao_kreis==5974
+(1 real change made)
+
+. replace local_labor=5113000 if ao_kreis==5978
+(1 real change made)
+
+. replace local_labor=6411000 if ao_kreis==6411
+(1 real change made)
+
+. replace local_labor=6412000 if ao_kreis==6412
+(1 real change made)
+
+. replace local_labor=6412000 if ao_kreis==6413
+(1 real change made)
+
+. replace local_labor=6414000 if ao_kreis==6414
+(1 real change made)
+
+. replace local_labor=8222000 if ao_kreis==6431
+(1 real change made)
+
+. replace local_labor=6411000 if ao_kreis==6432
+(1 real change made)
+
+. replace local_labor=6412000 if ao_kreis==6433
+(1 real change made)
+
+. replace local_labor=6412000 if ao_kreis==6434
+(1 real change made)
+
+. replace local_labor=6412000 if ao_kreis==6435
+(1 real change made)
+
+. replace local_labor=6412000 if ao_kreis==6436
+(1 real change made)
+
+. replace local_labor=6411000 if ao_kreis==6437
+(1 real change made)
+
+. replace local_labor=6412000 if ao_kreis==6438
+(1 real change made)
+
+. replace local_labor=6414000 if ao_kreis==6439
+(1 real change made)
+
+. replace local_labor=6412000 if ao_kreis==6440
+(1 real change made)
+
+. replace local_labor=6531005 if ao_kreis==6531
+(1 real change made)
+
+. replace local_labor=6531005 if ao_kreis==6532
+(1 real change made)
+
+. replace local_labor=6412000 if ao_kreis==6533
+(1 real change made)
+
+. replace local_labor=6534014 if ao_kreis==6534
+(1 real change made)
+
+. replace local_labor=6412000 if ao_kreis==6535
+(1 real change made)
+
+. replace local_labor=6611000 if ao_kreis==6611
+(1 real change made)
+
+. replace local_labor=6631009 if ao_kreis==6631
+(1 real change made)
+
+. replace local_labor=6611000 if ao_kreis==6632
+(1 real change made)
+
+. replace local_labor=6611000 if ao_kreis==6633
+(1 real change made)
+
+. replace local_labor=6611000 if ao_kreis==6634
+(1 real change made)
+
+. replace local_labor=6611000 if ao_kreis==6635
+(1 real change made)
+
+. replace local_labor=6611000 if ao_kreis==6636
+(1 real change made)
+
+. replace local_labor=7111000 if ao_kreis==7111
+(1 real change made)
+
+. replace local_labor=5315000 if ao_kreis==7131
+(1 real change made)
+
+. replace local_labor=5970040 if ao_kreis==7132
+(1 real change made)
+
+. replace local_labor=6414000 if ao_kreis==7133
+(1 real change made)
+
+. replace local_labor=6414000 if ao_kreis==7134
+(1 real change made)
+
+. replace local_labor=7111000 if ao_kreis==7135
+(1 real change made)
+
+. replace local_labor=7111000 if ao_kreis==7137
+(1 real change made)
+
+. replace local_labor=7111000 if ao_kreis==7138
+(1 real change made)
+
+. replace local_labor=7111000 if ao_kreis==7140
+(1 real change made)
+
+. replace local_labor=6412000 if ao_kreis==7141
+(1 real change made)
+
+. replace local_labor=7111000 if ao_kreis==7143
+(1 real change made)
+
+. replace local_labor=7211000 if ao_kreis==7211
+(1 real change made)
+
+. replace local_labor=7211000 if ao_kreis==7231
+(1 real change made)
+
+. replace local_labor=7211000 if ao_kreis==7232
+(1 real change made)
+
+. replace local_labor=7211000 if ao_kreis==7233
+(1 real change made)
+
+. replace local_labor=7211000 if ao_kreis==7235
+(1 real change made)
+
+. replace local_labor=8222000 if ao_kreis==7311
+(1 real change made)
+
+. replace local_labor=7312000 if ao_kreis==7312
+(1 real change made)
+
+. replace local_labor=7316000 if ao_kreis==7313
+(1 real change made)
+
+. replace local_labor=8222000 if ao_kreis==7314
+(1 real change made)
+
+. replace local_labor=6414000 if ao_kreis==7315
+(1 real change made)
+
+. replace local_labor=7316000 if ao_kreis==7316
+(1 real change made)
+
+. replace local_labor=10045114 if ao_kreis==7317
+(1 real change made)
+
+. replace local_labor=8222000 if ao_kreis==7318
+(1 real change made)
+
+. replace local_labor=8222000 if ao_kreis==7319
+(1 real change made)
+
+. replace local_labor=10045114 if ao_kreis==7320
+(1 real change made)
+
+. replace local_labor=6414000 if ao_kreis==7331
+(1 real change made)
+
+. replace local_labor=8222000 if ao_kreis==7332
+(1 real change made)
+
+. replace local_labor=8222000 if ao_kreis==7333
+(1 real change made)
+
+. replace local_labor=7316000 if ao_kreis==7334
+(1 real change made)
+
+. replace local_labor=7312000 if ao_kreis==7335
+(1 real change made)
+
+. replace local_labor=7312000 if ao_kreis==7336
+(1 real change made)
+
+. replace local_labor=7316000 if ao_kreis==7337
+(1 real change made)
+
+. replace local_labor=8222000 if ao_kreis==7338
+(1 real change made)
+
+. replace local_labor=6414000 if ao_kreis==7339
+(1 real change made)
+
+. replace local_labor=10045114 if ao_kreis==7340
+(1 real change made)
+
+. replace local_labor=8111000 if ao_kreis==8111
+(1 real change made)
+
+. replace local_labor=8111000 if ao_kreis==8115
+(1 real change made)
+
+. replace local_labor=8111000 if ao_kreis==8116
+(1 real change made)
+
+. replace local_labor=8117026 if ao_kreis==8117
+(1 real change made)
+
+. replace local_labor=8111000 if ao_kreis==8118
+(1 real change made)
+
+. replace local_labor=8111000 if ao_kreis==8119
+(1 real change made)
+
+. replace local_labor=8121000 if ao_kreis==8121
+(1 real change made)
+
+. replace local_labor=8121000 if ao_kreis==8125
+(1 real change made)
+
+. replace local_labor=8121000 if ao_kreis==8126
+(1 real change made)
+
+. replace local_labor=8127076 if ao_kreis==8127
+(1 real change made)
+
+. replace local_labor=8127076 if ao_kreis==8128
+(1 real change made)
+
+. replace local_labor=8136088 if ao_kreis==8135
+(1 real change made)
+
+. replace local_labor=8136088 if ao_kreis==8136
+(1 real change made)
+
+. replace local_labor=8212000 if ao_kreis==8211
+(1 real change made)
+
+. replace local_labor=8212000 if ao_kreis==8212
+(1 real change made)
+
+. replace local_labor=8212000 if ao_kreis==8215
+(1 real change made)
+
+. replace local_labor=8212000 if ao_kreis==8216
+(1 real change made)
+
+. replace local_labor=8222000 if ao_kreis==8221
+(1 real change made)
+
+. replace local_labor=8222000 if ao_kreis==8222
+(1 real change made)
+
+. replace local_labor=8121000 if ao_kreis==8225
+(1 real change made)
+
+. replace local_labor=8222000 if ao_kreis==8226
+(1 real change made)
+
+. replace local_labor=8231000 if ao_kreis==8231
+(1 real change made)
+
+. replace local_labor=8111000 if ao_kreis==8235
+(1 real change made)
+
+. replace local_labor=8231000 if ao_kreis==8236
+(1 real change made)
+
+. replace local_labor=8111000 if ao_kreis==8237
+(1 real change made)
+
+. replace local_labor=8311000 if ao_kreis==8311
+(1 real change made)
+
+. replace local_labor=8311000 if ao_kreis==8315
+(1 real change made)
+
+. replace local_labor=8311000 if ao_kreis==8316
+(1 real change made)
+
+. replace local_labor=8317096 if ao_kreis==8317
+(1 real change made)
+
+. replace local_labor=8326074 if ao_kreis==8325
+(1 real change made)
+
+. replace local_labor=8326074 if ao_kreis==8326
+(1 real change made)
+
+. replace local_labor=8326074 if ao_kreis==8327
+(1 real change made)
+
+. replace local_labor=8335075 if ao_kreis==8335
+(1 real change made)
+
+. replace local_labor=8336050 if ao_kreis==8336
+(1 real change made)
+
+. replace local_labor=8336050 if ao_kreis==8337
+(1 real change made)
+
+. replace local_labor=8415061 if ao_kreis==8415
+(1 real change made)
+
+. replace local_labor=8111000 if ao_kreis==8416
+(1 real change made)
+
+. replace local_labor=8417079 if ao_kreis==8417
+(1 real change made)
+
+. replace local_labor=8421000 if ao_kreis==8421
+(1 real change made)
+
+. replace local_labor=8421000 if ao_kreis==8425
+(1 real change made)
+
+. replace local_labor=8421000 if ao_kreis==8426
+(1 real change made)
+
+. replace local_labor=8435016 if ao_kreis==8435
+(1 real change made)
+
+. replace local_labor=8436064 if ao_kreis==8436
+(1 real change made)
+
+. replace local_labor=8421000 if ao_kreis==8437
+(1 real change made)
+
+. replace local_labor=9161000 if ao_kreis==9161
+(1 real change made)
+
+. replace local_labor=9162000 if ao_kreis==9162
+(1 real change made)
+
+. replace local_labor=9162000 if ao_kreis==9163
+(1 real change made)
+
+. replace local_labor=9171112 if ao_kreis==9171
+(1 real change made)
+
+. replace local_labor=9189155 if ao_kreis==9172
+(1 real change made)
+
+. replace local_labor=9162000 if ao_kreis==9173
+(1 real change made)
+
+. replace local_labor=9162000 if ao_kreis==9174
+(1 real change made)
+
+. replace local_labor=9162000 if ao_kreis==9175
+(1 real change made)
+
+. replace local_labor=9161000 if ao_kreis==9176
+(1 real change made)
+
+. replace local_labor=9162000 if ao_kreis==9177
+(1 real change made)
+
+. replace local_labor=9162000 if ao_kreis==9178
+(1 real change made)
+
+. replace local_labor=9162000 if ao_kreis==9179
+(1 real change made)
+
+. replace local_labor=9162000 if ao_kreis==9180
+(1 real change made)
+
+. replace local_labor=9162000 if ao_kreis==9181
+(1 real change made)
+
+. replace local_labor=9162000 if ao_kreis==9182
+(1 real change made)
+
+. replace local_labor=9162000 if ao_kreis==9183
+(1 real change made)
+
+. replace local_labor=9162000 if ao_kreis==9184
+(1 real change made)
+
+. replace local_labor=9161000 if ao_kreis==9185
+(1 real change made)
+
+. replace local_labor=9161000 if ao_kreis==9186
+(1 real change made)
+
+. replace local_labor=9162000 if ao_kreis==9187
+(1 real change made)
+
+. replace local_labor=9162000 if ao_kreis==9188
+(1 real change made)
+
+. replace local_labor=9189155 if ao_kreis==9189
+(1 real change made)
+
+. replace local_labor=9162000 if ao_kreis==9190
+(1 real change made)
+
+. replace local_labor=9261000 if ao_kreis==9261
+(1 real change made)
+
+. replace local_labor=9262000 if ao_kreis==9262
+(1 real change made)
+
+. replace local_labor=9362000 if ao_kreis==9263
+(1 real change made)
+
+. replace local_labor=9271119 if ao_kreis==9271
+(1 real change made)
+
+. replace local_labor=9262000 if ao_kreis==9272
+(1 real change made)
+
+. replace local_labor=9161000 if ao_kreis==9273
+(1 real change made)
+
+. replace local_labor=9261000 if ao_kreis==9274
+(1 real change made)
+
+. replace local_labor=9262000 if ao_kreis==9275
+(1 real change made)
+
+. replace local_labor=9271119 if ao_kreis==9276
+(1 real change made)
+
+. replace local_labor=9171112 if ao_kreis==9277
+(1 real change made)
+
+. replace local_labor=9362000 if ao_kreis==9278
+(1 real change made)
+
+. replace local_labor=9261000 if ao_kreis==9279
+(1 real change made)
+
+. replace local_labor=9564000 if ao_kreis==9361
+(1 real change made)
+
+. replace local_labor=9362000 if ao_kreis==9362
+(1 real change made)
+
+. replace local_labor=9363000 if ao_kreis==9363
+(1 real change made)
+
+. replace local_labor=9564000 if ao_kreis==9371
+(1 real change made)
+
+. replace local_labor=9362000 if ao_kreis==9372
+(1 real change made)
+
+. replace local_labor=9564000 if ao_kreis==9373
+(1 real change made)
+
+. replace local_labor=9363000 if ao_kreis==9374
+(1 real change made)
+
+. replace local_labor=9362000 if ao_kreis==9375
+(1 real change made)
+
+. replace local_labor=9362000 if ao_kreis==9376
+(1 real change made)
+
+. replace local_labor=9479136 if ao_kreis==9377
+(1 real change made)
+
+. replace local_labor=9461000 if ao_kreis==9461
+(1 real change made)
+
+. replace local_labor=9462000 if ao_kreis==9462
+(1 real change made)
+
+. replace local_labor=9463000 if ao_kreis==9463
+(1 real change made)
+
+. replace local_labor=9464000 if ao_kreis==9464
+(1 real change made)
+
+. replace local_labor=9461000 if ao_kreis==9471
+(1 real change made)
+
+. replace local_labor=9462000 if ao_kreis==9472
+(1 real change made)
+
+. replace local_labor=9463000 if ao_kreis==9473
+(1 real change made)
+
+. replace local_labor=9564000 if ao_kreis==9474
+(1 real change made)
+
+. replace local_labor=9464000 if ao_kreis==9475
+(1 real change made)
+
+. replace local_labor=9463000 if ao_kreis==9476
+(1 real change made)
+
+. replace local_labor=9462000 if ao_kreis==9477
+(1 real change made)
+
+. replace local_labor=9463000 if ao_kreis==9478
+(1 real change made)
+
+. replace local_labor=9479136 if ao_kreis==9479
+(1 real change made)
+
+. replace local_labor=9564000 if ao_kreis==9561
+(1 real change made)
+
+. replace local_labor=9564000 if ao_kreis==9562
+(1 real change made)
+
+. replace local_labor=9564000 if ao_kreis==9563
+(1 real change made)
+
+. replace local_labor=9564000 if ao_kreis==9564
+(1 real change made)
+
+. replace local_labor=9564000 if ao_kreis==9565
+(1 real change made)
+
+. replace local_labor=9564000 if ao_kreis==9571
+(1 real change made)
+
+. replace local_labor=9564000 if ao_kreis==9572
+(1 real change made)
+
+. replace local_labor=9564000 if ao_kreis==9573
+(1 real change made)
+
+. replace local_labor=9564000 if ao_kreis==9574
+(1 real change made)
+
+. replace local_labor=9564000 if ao_kreis==9575
+(1 real change made)
+
+. replace local_labor=9564000 if ao_kreis==9576
+(1 real change made)
+
+. replace local_labor=9564000 if ao_kreis==9577
+(1 real change made)
+
+. replace local_labor=9661000 if ao_kreis==9661
+(1 real change made)
+
+. replace local_labor=9662000 if ao_kreis==9662
+(1 real change made)
+
+. replace local_labor=9663000 if ao_kreis==9663
+(1 real change made)
+
+. replace local_labor=9661000 if ao_kreis==9671
+(1 real change made)
+
+. replace local_labor=9662000 if ao_kreis==9672
+(1 real change made)
+
+. replace local_labor=9662000 if ao_kreis==9673
+(1 real change made)
+
+. replace local_labor=9662000 if ao_kreis==9674
+(1 real change made)
+
+. replace local_labor=9663000 if ao_kreis==9675
+(1 real change made)
+
+. replace local_labor=9661000 if ao_kreis==9676
+(1 real change made)
+
+. replace local_labor=9663000 if ao_kreis==9677
+(1 real change made)
+
+. replace local_labor=9662000 if ao_kreis==9678
+(1 real change made)
+
+. replace local_labor=9663000 if ao_kreis==9679
+(1 real change made)
+
+. replace local_labor=9761000 if ao_kreis==9761
+(1 real change made)
+
+. replace local_labor=9162000 if ao_kreis==9762
+(1 real change made)
+
+. replace local_labor=9763000 if ao_kreis==9763
+(1 real change made)
+
+. replace local_labor=9764000 if ao_kreis==9764
+(1 real change made)
+
+. replace local_labor=9761000 if ao_kreis==9771
+(1 real change made)
+
+. replace local_labor=9761000 if ao_kreis==9772
+(1 real change made)
+
+. replace local_labor=9761000 if ao_kreis==9773
+(1 real change made)
+
+. replace local_labor=9761000 if ao_kreis==9774
+(1 real change made)
+
+. replace local_labor=8421000 if ao_kreis==9775
+(1 real change made)
+
+. replace local_labor=8436064 if ao_kreis==9776
+(1 real change made)
+
+. replace local_labor=9162000 if ao_kreis==9777
+(1 real change made)
+
+. replace local_labor=9764000 if ao_kreis==9778
+(1 real change made)
+
+. replace local_labor=9761000 if ao_kreis==9779
+(1 real change made)
+
+. replace local_labor=9763000 if ao_kreis==9780
+(1 real change made)
+
+. replace local_labor=10041100 if ao_kreis==10041
+(1 real change made)
+
+. replace local_labor=10041100 if ao_kreis==10042
+(1 real change made)
+
+. replace local_labor=10041100 if ao_kreis==10043
+(1 real change made)
+
+. replace local_labor=10041100 if ao_kreis==10044
+(1 real change made)
+
+. replace local_labor=10045114 if ao_kreis==10045
+(1 real change made)
+
+. replace local_labor=10041100 if ao_kreis==10046
+(1 real change made)
+
+. replace local_labor=11000000 if ao_kreis==11000
+(1 real change made)
+
+. replace local_labor=11000000 if ao_kreis==12051
+(1 real change made)
+
+. replace local_labor=12052000 if ao_kreis==12052
+(1 real change made)
+
+. replace local_labor=11000000 if ao_kreis==12053
+(1 real change made)
+
+. replace local_labor=11000000 if ao_kreis==12054
+(1 real change made)
+
+. replace local_labor=11000000 if ao_kreis==12060
+(1 real change made)
+
+. replace local_labor=11000000 if ao_kreis==12061
+(1 real change made)
+
+. replace local_labor=12052000 if ao_kreis==12062
+(1 real change made)
+
+. replace local_labor=11000000 if ao_kreis==12063
+(1 real change made)
+
+. replace local_labor=11000000 if ao_kreis==12064
+(1 real change made)
+
+. replace local_labor=11000000 if ao_kreis==12065
+(1 real change made)
+
+. replace local_labor=12052000 if ao_kreis==12066
+(1 real change made)
+
+. replace local_labor=11000000 if ao_kreis==12067
+(1 real change made)
+
+. replace local_labor=11000000 if ao_kreis==12068
+(1 real change made)
+
+. replace local_labor=11000000 if ao_kreis==12069
+(1 real change made)
+
+. replace local_labor=11000000 if ao_kreis==12070
+(1 real change made)
+
+. replace local_labor=12052000 if ao_kreis==12071
+(1 real change made)
+
+. replace local_labor=11000000 if ao_kreis==12072
+(1 real change made)
+
+. replace local_labor=11000000 if ao_kreis==12073
+(1 real change made)
+
+. replace local_labor=13003000 if ao_kreis==13003
+(1 real change made)
+
+. replace local_labor=13004000 if ao_kreis==13004
+(1 real change made)
+
+. replace local_labor=13071107 if ao_kreis==13071
+(1 real change made)
+
+. replace local_labor=13003000 if ao_kreis==13072
+(1 real change made)
+
+. replace local_labor=13075039 if ao_kreis==13073
+(1 real change made)
+
+. replace local_labor=13004000 if ao_kreis==13074
+(1 real change made)
+
+. replace local_labor=13075039 if ao_kreis==13075
+(1 real change made)
+
+. replace local_labor=13004000 if ao_kreis==13076
+(1 real change made)
+
+. replace local_labor=14511000 if ao_kreis==14511
+(1 real change made)
+
+. replace local_labor=14511000 if ao_kreis==14521
+(1 real change made)
+
+. replace local_labor=14511000 if ao_kreis==14522
+(1 real change made)
+
+. replace local_labor=14523320 if ao_kreis==14523
+(1 real change made)
+
+. replace local_labor=14524330 if ao_kreis==14524
+(1 real change made)
+
+. replace local_labor=14612000 if ao_kreis==14612
+(1 real change made)
+
+. replace local_labor=14612000 if ao_kreis==14625
+(1 real change made)
+
+. replace local_labor=14612000 if ao_kreis==14626
+(1 real change made)
+
+. replace local_labor=14612000 if ao_kreis==14627
+(1 real change made)
+
+. replace local_labor=14612000 if ao_kreis==14628
+(1 real change made)
+
+. replace local_labor=14713000 if ao_kreis==14713
+(1 real change made)
+
+. replace local_labor=14713000 if ao_kreis==14729
+(1 real change made)
+
+. replace local_labor=14713000 if ao_kreis==14730
+(1 real change made)
+
+. replace local_labor=15001000 if ao_kreis==15001
+(1 real change made)
+
+. replace local_labor=15002000 if ao_kreis==15002
+(1 real change made)
+
+. replace local_labor=15003000 if ao_kreis==15003
+(1 real change made)
+
+. replace local_labor=15003000 if ao_kreis==15081
+(1 real change made)
+
+. replace local_labor=15001000 if ao_kreis==15082
+(1 real change made)
+
+. replace local_labor=15003000 if ao_kreis==15083
+(1 real change made)
+
+. replace local_labor=15002000 if ao_kreis==15084
+(1 real change made)
+
+. replace local_labor=15085370 if ao_kreis==15085
+(1 real change made)
+
+. replace local_labor=15003000 if ao_kreis==15086
+(1 real change made)
+
+. replace local_labor=15002000 if ao_kreis==15087
+(1 real change made)
+
+. replace local_labor=15002000 if ao_kreis==15088
+(1 real change made)
+
+. replace local_labor=15003000 if ao_kreis==15089
+(1 real change made)
+
+. replace local_labor=15003000 if ao_kreis==15090
+(1 real change made)
+
+. replace local_labor=15001000 if ao_kreis==15091
+(1 real change made)
+
+. replace local_labor=16051000 if ao_kreis==16051
+(1 real change made)
+
+. replace local_labor=16052000 if ao_kreis==16052
+(1 real change made)
+
+. replace local_labor=16053000 if ao_kreis==16053
+(1 real change made)
+
+. replace local_labor=16054000 if ao_kreis==16054
+(1 real change made)
+
+. replace local_labor=16051000 if ao_kreis==16055
+(1 real change made)
+
+. replace local_labor=16051000 if ao_kreis==16056
+(1 real change made)
+
+. replace local_labor=3152012 if ao_kreis==16061
+(1 real change made)
+
+. replace local_labor=3152012 if ao_kreis==16062
+(1 real change made)
+
+. replace local_labor=16051000 if ao_kreis==16063
+(1 real change made)
+
+. replace local_labor=16051000 if ao_kreis==16064
+(1 real change made)
+
+. replace local_labor=16051000 if ao_kreis==16065
+(1 real change made)
+
+. replace local_labor=16054000 if ao_kreis==16066
+(1 real change made)
+
+. replace local_labor=16051000 if ao_kreis==16067
+(1 real change made)
+
+. replace local_labor=16051000 if ao_kreis==16068
+(1 real change made)
+
+. replace local_labor=16054000 if ao_kreis==16069
+(1 real change made)
+
+. replace local_labor=16051000 if ao_kreis==16070
+(1 real change made)
+
+. replace local_labor=16051000 if ao_kreis==16071
+(1 real change made)
+
+. replace local_labor=9463000 if ao_kreis==16072
+(1 real change made)
+
+. replace local_labor=16051000 if ao_kreis==16073
+(1 real change made)
+
+. replace local_labor=16053000 if ao_kreis==16074
+(1 real change made)
+
+. replace local_labor=16051000 if ao_kreis==16075
+(1 real change made)
+
+. replace local_labor=16052000 if ao_kreis==16076
+(1 real change made)
+
+. replace local_labor=14713000 if ao_kreis==16077
+(1 real change made)
+
+. 
+. * Verify that every Kreis in the SIEED sample has been assigned to a local
+. * labor market. The observation count below should be zero.
+. sum if local_labor==.
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+    ao_kreis |          1        3159           .       3159       3159
+ local_labor |          0
+
+. 
+. 
+. save "${data}/local_labor_market.dta", replace
+file /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/sieed_analysis/data/local_labor_market.dta saved
+
+. 
+. log close
+      name:  <unnamed>
+       log:  /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/sieed_analysis/log/1b_add_local_labor_market.log
+  log type:  text
+ closed on:   9 Sep 2026, 16:00:44
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

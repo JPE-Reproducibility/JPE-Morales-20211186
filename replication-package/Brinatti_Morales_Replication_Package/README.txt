@@ -19,7 +19,11 @@ figure in the paper.
 0. PACKAGE CONTENTS AT A GLANCE
 --------------------------------------------------------------------------------
 
-The package has four top-level folders:
+The package has four top-level analysis folders, plus a paper-appendices/
+folder containing the manuscript PDF:
+
+  paper-appendices/       Brinatti_Morales_final_draft.pdf, the full paper
+                          manuscript (including all appendices).
 
   calibration_external/   A standalone Stata do-file that compute external
                           calibration moment for the Cobb Douglas share of consumption from public data (World Bank, WIOD).
@@ -149,6 +153,14 @@ README).
                                           product, not a separate external dataset;
                                           it is covered by the LIAB/IABBP/SIEED
                                           citations in Section 8.1.
+        Validation_data.csv                Open-format (plain-text CSV) copy of
+                                          the single sheet ("Sheet4", range
+                                          A1:M21) contained in Validation_data.xlsx,
+                                          provided for accessibility. The code
+                                          (model_analysis/code/stata_plots/
+                                          Validation_cross_CI_heterog.do) reads
+                                          the .xlsx file directly; the .csv is a
+                                          convenience copy with identical content.
 
 2.3 PUBLIC EXTERNAL DATA (free, redistributable; included for convenience)
 
@@ -184,6 +196,20 @@ Data citation: Section 8.2.
 2.4 STATEMENT ABOUT RIGHTS
 
 We certify that the author(s) of the manuscript have legitimate access to and permission to use the data used in this manuscript. Access to the restricted FDZ data was granted through a formal application process with the data providers and disclosure of results followed their confidentiality process. Every number reported in the paper went through the appropriate disclosure process.
+
+Note on personally-identifying-information (PII) indicators: an automated scan
+of this package flags variable names and file contents that superficially
+match common PII-related substrings (e.g. "son", "lat", "loc", "url", "sex",
+"name", "country"). These are, to the best of our knowledge, false positives
+arising from substring matches within longer variable/field names (e.g.
+"person", "season", "local", "location") rather than actual personally
+identifying information. More generally: the confidential IAB/FDZ data
+(Section 2.1) are anonymized by the data provider (the Research Data Centre
+of the German Federal Employment Agency at IAB) before being made available
+to researchers, and all analysis and disclosure of results followed the
+FDZ's own confidentiality and statistical disclosure control process
+(Section 2.5). This project was reviewed by the University of Michigan
+Institutional Review Board and determined to be exempt from IRB review.
 
 
 2.5 PRESERVATION OF RESTRICTED-ACCESS DATA AND SUPPORT FOR REPLICATION CHECKS
@@ -245,18 +271,36 @@ and Nicolas Morales (Nicolas.Morales@rich.frb.org).
 Also, make sure to add the ado files bartik_weight.ado, btsls.ado, and ch_weak.ado, which are not available via ssc install.
 The codes can be downloaded directly at https://github.com/paulgp/bartik-weight/tree/master/code
 
+    WHERE TO PUT THESE FILES: place the three downloaded .ado files directly in
+    liab_analysis/prog/ (the folder that contains the do-files that call them).
+    Every liab_analysis do-file that needs them already runs
+    `capture adopath++ ${prog}` at the top, which adds liab_analysis/prog/ to
+    Stata's ado search path, so no further configuration is needed once the
+    files are copied there. Alternatively, they can be placed in your personal
+    Stata ado directory (run `sysdir` in Stata and use the PERSONAL or PLUS
+    path shown), which works regardless of the working directory.
+
 
 3.2 MATLAB
-  - MATLAB (R2019b or later recommended) with the Optimization Toolbox.
-    The model solution and calibration use fsolve and fminsearch; the
-    nu-estimation helper files in liab_analysis/prog use fsolve and gamma().
-  - No additional MATLAB toolboxes are required.
+  - MATLAB (R2019b or later recommended) with the Optimization Toolbox AND the
+    Statistics and Machine Learning Toolbox.
+    The model solution and calibration use fsolve and fminsearch (Optimization
+    Toolbox); the nu-estimation helper files in liab_analysis/prog use fsolve
+    and gamma(). The heterogeneous-firm model draws (Heterogeneity.m, called
+    from Counterfactual_heterogeneous_open.m / Counterfactual_heterogeneous_closed.m)
+    use mvnrnd, which requires the Statistics and Machine Learning Toolbox.
+  - If MATLAB is on the system PATH, the entire package (MATLAB + Stata) can be
+    run end to end from master_file.do alone (see master_file.do, Part 5); the
+    do-file invokes MATLAB via `shell matlab -batch ...`.
 
 3.3 RUN TIME AND REPRODUCIBILITY
   - Run time is data-dependent. The empirical part of the model takes close to 5 hours to run on the full data.
     On the genuine FDZ data, the bootstrap-based
     do-files (5,000 firm-clustered draws) and the model calibration (SMM via
     fminsearch) are the slow steps.
+  - With the shipped TEST data, the full package (Stata + MATLAB) takes
+    approximately 1 hour to run end to end (Stata analysis: ~48 minutes;
+    MATLAB model: ~8 minutes; timed on a MacBook Air 2020, M1 chip, 8 GB RAM).
   - Seeds are set (set seed 1234 in Stata; explicit bootstrap seeds were used).
   - With the shipped TEST data the code runs to completion but outputs WILL NOT
     match the paper.
@@ -349,7 +393,9 @@ prog/master.do, which always runs 1-7 before 8-19 and handles this correctly).
     estimate_nu_2j_cont.m    Calls solve_kappa for the three FE specifications in
                              Table C6 to back out nu.
 
-Due to the way output is released according to the FDZ guidelines, the Figures and Tables of the paper are disclosed via tables that we later convert into Figures using predominantly Excel. As such, the Figures are not directly produced using the code but the underlying data to construct them is.
+Due to the way output is released according to the FDZ guidelines, the Figures and Tables of the paper are disclosed via tables that we later convert into Figures using predominantly Excel. As such, the Figures as they appear in the published paper are not directly produced using the code but the underlying data to construct them is.
+
+For this deposit we have additionally added Stata code (at the end of the relevant do-files, clearly marked and not altering any of the pre-existing analysis) that reads back this same underlying data and produces a Stata-rendered version of each figure, saved as .jpg files in an output/ subfolder. These Stata-rendered figures reproduce the same numbers as the published figures, but will not be pixel-identical to them: the published versions were formatted by hand in Excel (fonts, colors, markers, axis styling chosen by the authors), while the added Stata code uses Stata's own default graph styling. Only the underlying data is guaranteed to match.
 
 ================================================================================
 4.3 model_analysis/  (SELF-CONTAINED — see its own README files)
@@ -408,14 +454,33 @@ four path globals (Section 5). Files 1a-1c build datasets; 2a-2c produce output.
     2c_results_figA5.do              Figure A5 (hiring dynamics after a firm first
                                      hires immigrants).
 
-Due to the way output is released according to the FDZ guidelines, the Figures and Tables of the paper are disclosed via tables that we later convert into Figures using predominantly Excel. As such, the Figures are not directly produced using the code but the underlying data to construct them is.
+Due to the way output is released according to the FDZ guidelines, the Figures and Tables of the paper are disclosed via tables that we later convert into Figures using predominantly Excel. As such, the Figures as they appear in the published paper are not directly produced using the code but the underlying data to construct them is.
+
+For this deposit we have additionally added Stata code (at the end of the relevant do-files, clearly marked and not altering any of the pre-existing analysis) that reads back this same underlying data and produces a Stata-rendered version of each figure, saved as .jpg files in an output/ subfolder. These Stata-rendered figures reproduce the same numbers as the published figures, but will not be pixel-identical to them: the published versions were formatted by hand in Excel (fonts, colors, markers, axis styling chosen by the authors), while the added Stata code uses Stata's own default graph styling. Only the underlying data is guaranteed to match.
 
 --------------------------------------------------------------------------------
 5. INSTRUCTIONS TO REPLICATORS
 --------------------------------------------------------------------------------
 
 Prerequisite: install the Stata packages in Section 3.1 and have MATLAB with the
-Optimization Toolbox available.
+Optimization Toolbox and the Statistics and Machine Learning Toolbox available.
+
+Package setup: unzip the archive directly into a folder named
+"replication-package" (i.e. so that the path to this README is
+".../replication-package/Brinatti_Morales_Replication_Package/README.txt"),
+rather than unzipping into an arbitrarily-named or nested folder. This matches
+the folder layout assumed by the "root" example path in master_file.do.
+
+After unzipping, confirm that the whole package folder (in particular the
+empty data/ and log/ subfolders of liab_analysis/ and sieed_analysis/) is
+writable by your user account before running any code. Depending on the
+unzip tool and OS used, these can sometimes be extracted as read-only, which
+causes a "file ... could not be opened" error the first time a do-file tries
+to write its log (e.g. log using "${log}/master.log"). On macOS/Linux this is
+fixed with `chmod -R u+w Brinatti_Morales_Replication_Package`; on Windows,
+clear the "Read-only" attribute on the folder (right-click > Properties) or
+run `attrib -R Brinatti_Morales_Replication_Package /S /D` from a command
+prompt.
 
 5.1 EMPIRICAL FOLDERS (liab_analysis, sieed_analysis)
 The master file master_file.do, found in the main directory runs the analysis of liab and sieed. You will need to set the "root" path where the replication folder is located:
@@ -458,7 +523,7 @@ shipped here.
 
 EXHIBIT                                      FOLDER                PROGRAM                                       CONFIDENTIAL DATA?
 -------                                      ------                -------                                       ------------------
-Table 1 (data side)                                     liab_analysis         19_moments_calculation.do                     Yes
+Table 1 (data side)                          liab_analysis         19_moments_calculation.do                     Yes
 Table 1 (model side) / Table 2               model_analysis        code/model/Export_latex_tables.m              No
 Table A1, A2                                 liab_analysis         17_empirical_facts.do                         Yes
 Tables A3-A5                                 sieed_analysis        2a_results_event_studies.do                   Yes
@@ -493,6 +558,12 @@ Calibration moment tradeable share (~0.68)   calibration_external  tradeable_con
 Note: in the empirical folders, several exhibits that appear as figures in the
 paper are produced as the underlying numerical tables (point estimates and
 bootstrap confidence intervals), in line with FDZ output-disclosure rules.
+Each of these do-files now also contains an added Stata plotting section
+(clearly marked, at the end of the file) that reads these tables back and
+saves a Stata-rendered .jpg of the figure to an output/ subfolder. These
+reproduce the same underlying numbers as the published figures but are not
+pixel-identical to them, since the published figures were formatted by hand
+in Excel; see the note at the top of each plotting section for details.
 
 --------------------------------------------------------------------------------
 7. NOTES

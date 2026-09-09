@@ -1,0 +1,1217 @@
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/log/4_dataset_firm_level.log
+  log type:  text
+ opened on:   9 Sep 2026, 15:07:05
+
+. 
+. * Construct establishment-level dataset
+. * Agostina Brinatti & Nicolas Morales
+. * Source data: LIAB Longitudinal Model (version 1993-2014), IAB
+. *              IAB Establishment Panel (IABBP), waves 2004-2012
+. 
+. /*      This dofile constructs the establishment-year analysis dataset.
+>         It does three things:
+>           (i)  Uses the employer-employee data to construct wage bill and
+>                employment measures at the establishment and market level
+>           (ii) Merges establishment-level financial data from the IAB
+>                Establishment Panel (IABBP) surveys 2004-2012
+>           (iii) Cleans industry categories, constructs fixed-effect groups,
+>                 and deflates monetary variables to real 2010 euros
+> 
+>         Input:
+>           ${data}/individual_level_liab.dta       — from dofile 1
+>           ${data}/aokreis11.dta                   — from dofile 2
+>           ${orig}/iabbp_YYYY.dta                  — IAB Establishment Panel waves 2004-2012
+>           ${orig}/cpigermany.dta                  — CPI deflator
+> 
+>         Output:
+>           ${data}/establishment_level_liab.dta    — establishment-year panel
+> 
+>         No output tables or figures are produced in this dofile.
+> */
+. 
+. 
+. /*
+> Input datasets:
+> (i)  individual_level_rep_oct24: employer-employee level data, which already have the raw data on industry and labor market of the firm.
+> 
+> Output datasets:
+> (ii)"${data}/establishment_full_dataset_rep_oct24.dta": firm-year level with raw data (it does not create variable needed in regressions)
+> 
+> This file does three things:
+> (i) uses the employer-employee data to construct wagebill and employment measures at the market level
+> (ii) merges the employer-employee data with firm-level data on financials.
+> (iii) Clean up the industry categories and all fixed effects. We also add the definition of young, and experience category.
+> */
+. 
+. 
+. clear
+
+. 
+. set more off
+
+. set matsize 10000
+set matsize ignored.
+    Matrix sizes are no longer limited by c(matsize) in modern Statas.  Matrix sizes are now limited by edition of Stata.  See limits for more details.
+
+. set linesize 255
+
+. set seed 1234
+
+. 
+. 
+. cap adopath++ ${prog}
+
+. 
+. 
+. 
+. 
+. use "${data}/individual_level_liab.dta", clear
+
+. 
+. 
+. *Create industry category
+. 
+. gen ind_2dig=floor(w93_3_gen/10)
+(530 missing values generated)
+
+. 
+. replace ind_2dig=1 if ind_2dig>=1 & ind_2dig<=5
+(4,274 real changes made)
+
+. replace ind_2dig=10 if ind_2dig>=10 & ind_2dig<=14
+(5,409 real changes made)
+
+. replace ind_2dig=15 if ind_2dig>=15 & ind_2dig<=16
+(90 real changes made)
+
+. replace ind_2dig=17 if ind_2dig>=17 & ind_2dig<=19
+(5,440 real changes made)
+
+. replace ind_2dig=23 if ind_2dig>=23 & ind_2dig<=24
+(15,417 real changes made)
+
+. replace ind_2dig=29 if ind_2dig>=29 & ind_2dig<=30
+(1,226 real changes made)
+
+. replace ind_2dig=37 if ind_2dig>=37 & ind_2dig<=41
+(12,094 real changes made)
+
+. replace ind_2dig=65 if ind_2dig>=65 & ind_2dig<=67
+(23,342 real changes made)
+
+. 
+. gen ind2dig=ind_2dig /* because later calls may refer to this variable. Clean in the 2nd round*/
+(530 missing values generated)
+
+.  
+. gen tradeable3=((w93_3_gen>=154 & w93_3_gen<=366) | (w93_3_gen>=721 & w93_3_gen<=744) | (w93_3_gen>=501 & w93_3_gen<=517))
+
+. 
+. 
+. 
+. * We have two 2 digit industries that are both T and NT. To be consistent with the model, we redifine the classification as follows:
+. 
+. egen ind_2dig_aux       = group(ind_2dig tradeable3) 
+(530 missing values generated)
+
+. drop ind_2dig 
+
+. rename ind_2dig_aux ind_2dig
+
+. 
+. 
+. *create reduced local labor markets
+. gen ao_kreis11=ao_kreis
+
+. merge m:1 ao_kreis11 using "${data}/aokreis11.dta"
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                         2,538,940  (_merge==3)
+    -----------------------------------------
+
+. drop if _m==2
+(0 observations deleted)
+
+. drop _m
+
+. 
+. drop if ao_kreis11==.
+(0 observations deleted)
+
+. drop if ind_2dig==.
+(530 observations deleted)
+
+. 
+. 
+. *Fixed effects 
+. 
+. egen ind_labormkt       = group(ind_2dig local_labor11)
+
+. egen rt_fe                      = group(local_labor11 jahr)
+
+. egen kt_fe                      = group(ind_2dig jahr)
+
+. egen ind_med_time       = group(ind_2dig jahr)
+
+. 
+. 
+. 
+. drop kreis_tot_tot-year_americas_professional
+
+. 
+. foreach x of varlist tot german eu_orig1 eu_orig2 eu_2000 turkey yugoslavia europe_other asia africa_me americas {
+  2. 
+. foreach y of varlist tot {
+  3. 
+. bysort jahr ao_kreis: egen kreis_`x'_`y'=sum(tot_earn1*`x'*`y')
+  4. bysort jahr local_labor11: egen loclabor_`x'_`y'=sum(tot_earn1*`x'*`y')
+  5. bysort jahr: egen year_`x'_`y'=sum(tot_earn1*`x'*`y')
+  6. 
+. bysort jahr ao_kreis: egen nkreis_`x'_`y'=sum(main_obs*`x'*`y')
+  7. bysort jahr local_labor11: egen nloclabor_`x'_`y'=sum(main_obs*`x'*`y')
+  8. bysort jahr: egen nyear_`x'_`y'=sum(main_obs*`x'*`y')
+  9. 
+. 
+. }
+ 10. }
+
+. 
+. 
+. 
+. bysort persnr betnr: egen tenure_alt=rank(jahr), unique
+
+. 
+. 
+. keep if betr_st==1 | betr_st==2
+(1,577,130 observations deleted)
+
+. keep if jahr>=2003 & jahr<=2011
+(386,979 observations deleted)
+
+. 
+. 
+. gen young=(age<=40)  
+
+. gen tenure5=(tenure_alt<=5)  
+
+. gen experience10=(rank<=10)  
+
+. 
+. 
+. *Collapse data
+. 
+. foreach x of varlist tot german eu_orig1 eu_orig2 eu_2000 turkey yugoslavia europe_other asia africa_me americas {
+  2. 
+. 
+. foreach y of varlist tot college young tenure5 experience10 {   
+  3. 
+. 
+. bysort betnr jahr: egen emp_`x'_`y'=sum(share_in_estab*`x'*`y')
+  4. bysort betnr jahr: egen wbill_`x'_`y'=sum(tot_earn1*`x'*`y')
+  5. 
+. }
+  6. }
+
+. 
+. 
+. 
+. duplicates drop betnr jahr, force
+
+Duplicates in terms of betnr jahr
+
+(558,494 observations deleted)
+
+. 
+. 
+. 
+. 
+. 
+. ************************Bring in variables needed from survey
+. 
+. 
+. *Merging Financials from Interview data
+. 
+. gen turnover_type=.
+(15,807 missing values generated)
+
+. gen turnover=.
+(15,807 missing values generated)
+
+. gen grosspay=.
+(15,807 missing values generated)
+
+. 
+. gen relocated=.
+(15,807 missing values generated)
+
+. 
+. 
+. gen integrated=.
+(15,807 missing values generated)
+
+. gen exports_west_germany=.
+(15,807 missing values generated)
+
+. gen exports_east_germany=.
+(15,807 missing values generated)
+
+. gen exports_foreign=.
+(15,807 missing values generated)
+
+. gen int_inputs=.
+(15,807 missing values generated)
+
+. 
+. 
+. gen investment=.
+(15,807 missing values generated)
+
+. 
+. gen collective_agreement=.
+(15,807 missing values generated)
+
+. gen industry_agreement=.
+(15,807 missing values generated)
+
+. 
+. gen ownership_structure=.
+(15,807 missing values generated)
+
+. gen single_establishment=.
+(15,807 missing values generated)
+
+. 
+. gen parent_ownership=.
+(15,807 missing values generated)
+
+. gen foreign_parent=.
+(15,807 missing values generated)
+
+. 
+. 
+. *2012 survey - match to 2011 data
+. 
+. quietly merge m:1 idnum using "${orig}/iabbp_2012.dta", keepusing(t80 t79b t48 t49 t52 t21 t11 t09a t09b t09c t08 t07 t02a t02b t02c t02d t03)
+
+. drop if _m==2
+(9,964 observations deleted)
+
+. 
+. replace turnover_type=t07 if jahr==2011
+(1,983 real changes made)
+
+. replace turnover=t08 if jahr==2011
+(1,724 real changes made)
+
+. replace grosspay=t52 if jahr==2011
+(1,983 real changes made)
+
+. 
+. replace relocated=1 if (t02a==1 | t02b==1 | t02c==1) & jahr==2011
+(39 real changes made)
+
+. replace relocated=0 if (t02d==1) & jahr==2011
+(1,939 real changes made)
+
+. 
+. replace integrated=1 if t03==1 & jahr==2011
+(33 real changes made)
+
+. replace integrated=0 if t03==2 & jahr==2011
+(1,932 real changes made)
+
+. 
+. 
+. replace exports_west_germany=t09a if t09a!=-9 & jahr==2011
+(1,908 real changes made)
+
+. replace exports_east_germany=t09b if t09b!=-9 & jahr==2011
+(1,909 real changes made)
+
+. replace exports_foreign=t09c if t09c!=-9 & jahr==2011
+(1,912 real changes made)
+
+. 
+. replace int_inputs=t11 if t11!=-9 & jahr==2011
+(1,603 real changes made)
+
+. 
+. replace investment=t21 if t21!=-9 & jahr==2011
+(1,185 real changes made)
+
+. replace investment=0 if t21==. & jahr==2011 & _m==3
+(752 real changes made)
+
+. 
+. replace collective_agreement=t48 if t48!=-9 & jahr==2011
+(1,971 real changes made)
+
+. replace industry_agreement=t49 if t49!=-9 & jahr==2011
+(1,248 real changes made)
+
+. 
+. replace ownership_structure=t80 if t80!=-9 & jahr==2011
+(1,972 real changes made)
+
+. replace single_establishment=1 if t80==1 & jahr==2011
+(1,540 real changes made)
+
+. replace single_establishment=0 if t80!=1 & t80!=-9 & _m==3 & jahr==2011
+(455 real changes made)
+
+. 
+. replace parent_ownership=t79b if t79b!=-9 & jahr==2011
+(1,764 real changes made)
+
+. replace foreign_parent=1 if t79b==3 & jahr==2011
+(108 real changes made)
+
+. replace foreign_parent=0 if t79b!=3 &  t79b!=-9 & jahr==2011 & _m==3
+(1,880 real changes made)
+
+. 
+. 
+. drop t80 t79b t48 t49 t52 t21 t11 t09a t09b t09c t08 t07 t02a t02b t02c t02d t03
+
+. drop _m
+
+. 
+. 
+. 
+. 
+. 
+. 
+. *2011 survey - match to 2010 data
+. quietly merge m:1 idnum using "${orig}/iabbp_2011.dta", keepusing(s80b s84 s53 s52 s17 s11 s09c s09b s09a s03 s02d s02a s02b s02c s58 s08 s07)
+
+. drop if _m==2
+(9,317 observations deleted)
+
+. 
+. replace turnover_type=s07 if jahr==2010
+(1,724 real changes made)
+
+. replace turnover=s08 if jahr==2010
+(1,514 real changes made)
+
+. replace grosspay=s58 if jahr==2010
+(1,724 real changes made)
+
+. 
+. replace relocated=1 if (s02a==1 | s02b==1 | s02c==1) & jahr==2010
+(33 real changes made)
+
+. replace relocated=0 if (s02d==1) & jahr==2010
+(1,690 real changes made)
+
+. 
+. replace integrated=1 if s03==1 & jahr==2010
+(19 real changes made)
+
+. replace integrated=0 if s03==2 & jahr==2010
+(1,698 real changes made)
+
+. 
+. 
+. replace exports_west_germany=s09a if s09a!=-9 & jahr==2010
+(1,658 real changes made)
+
+. replace exports_east_germany=s09b if s09b!=-9 & jahr==2010
+(1,659 real changes made)
+
+. replace exports_foreign=s09c if s09c!=-9 & jahr==2010
+(1,661 real changes made)
+
+. 
+. replace int_inputs=s11 if s11!=-9 & jahr==2010
+(1,403 real changes made)
+
+. 
+. replace investment=s17 if s17!=-9 & jahr==2010
+(961 real changes made)
+
+. replace investment=0 if s17==. & jahr==2010 & _m==3
+(751 real changes made)
+
+. 
+. replace collective_agreement=s52 if s52!=-9 & jahr==2010
+(1,719 real changes made)
+
+. replace industry_agreement=s53 if s53!=-9 & jahr==2010
+(668 real changes made)
+
+. 
+. replace ownership_structure=s84 if s84!=-9 & jahr==2010
+(1,677 real changes made)
+
+. replace single_establishment=1 if s84==1 & jahr==2010
+(1,339 real changes made)
+
+. replace single_establishment=0 if s84!=1 & s84!=-9 & _m==3 & jahr==2010
+(363 real changes made)
+
+. 
+. replace parent_ownership=s80b if s80b!=-9 & jahr==2010
+(1,533 real changes made)
+
+. replace foreign_parent=1 if s80b==3 & jahr==2010
+(68 real changes made)
+
+. replace foreign_parent=0 if s80b!=3 &  s80b!=-9 & jahr==2010 & _m==3
+(1,655 real changes made)
+
+. 
+. 
+. drop s80b s84 s53 s52 s17 s11 s09c s09b s09a s03 s02d s02a s02b s02c s58 s08 s07
+
+. drop _m
+
+. 
+. 
+. 
+. 
+. 
+. 
+. *2010 survey - match to 2009 data
+. quietly merge m:1 idnum using "${orig}/iabbp_2010.dta", keepusing(r87 r83 r51 r50 r20 r13 r11c r11b r11a r03 r09 r10 r54 r02a r02b r02c r02d r02e r02f)
+
+. drop if _m==2
+(9,344 observations deleted)
+
+. 
+. replace turnover_type=r09 if jahr==2009
+(1,544 real changes made)
+
+. replace turnover=r10 if jahr==2009
+(1,356 real changes made)
+
+. replace grosspay=r54 if jahr==2009
+(1,544 real changes made)
+
+. 
+. replace relocated=1 if (r02a==1 | r02b==1 | r02c==1 | r02d==1 | r02e==1) & jahr==2009
+(24 real changes made)
+
+. replace relocated=0 if (r02f==1) & jahr==2009
+(1,408 real changes made)
+
+. 
+. replace integrated=1 if r03==1 & jahr==2009
+(16 real changes made)
+
+. replace integrated=0 if r03==2 & jahr==2009
+(1,515 real changes made)
+
+. 
+. 
+. replace exports_west_germany=r11a if r11a!=-9 & jahr==2009
+(1,485 real changes made)
+
+. replace exports_east_germany=r11b if r11b!=-9 & jahr==2009
+(1,485 real changes made)
+
+. replace exports_foreign=r11c if r11c!=-9 & jahr==2009
+(1,485 real changes made)
+
+. 
+. replace int_inputs=r13 if r13!=-9 & jahr==2009
+(1,276 real changes made)
+
+. 
+. replace investment=r20 if r20!=-9 & jahr==2009
+(849 real changes made)
+
+. replace investment=0 if r20==. & jahr==2009 & _m==3
+(671 real changes made)
+
+. 
+. replace collective_agreement=r50 if r50!=-9 & jahr==2009
+(1,513 real changes made)
+
+. replace industry_agreement=r51 if r51!=-9 & jahr==2009
+(939 real changes made)
+
+. 
+. replace ownership_structure=r83 if r83!=-9 & jahr==2009
+(1,520 real changes made)
+
+. replace single_establishment=1 if r83==1 & jahr==2009
+(1,205 real changes made)
+
+. replace single_establishment=0 if r83!=1 & r83!=-9 & _m==3 & jahr==2009
+(327 real changes made)
+
+. 
+. replace parent_ownership=r87 if r87!=-9 & jahr==2009
+(1,507 real changes made)
+
+. replace foreign_parent=1 if r87==3 & jahr==2009
+(52 real changes made)
+
+. replace foreign_parent=0 if r87!=3 &  r87!=-9 & jahr==2009 & _m==3
+(1,467 real changes made)
+
+. 
+. 
+. drop r87 r83 r51 r50 r20 r13 r11c r11b r11a r03 r09 r10 r54 r02a r02b r02c r02d r02e r02f
+
+. drop _m
+
+. 
+. 
+. 
+. 
+. 
+. 
+. *2009 survey - match to 2008 data
+. quietly merge m:1 idnum using "${orig}/iabbp_2009.dta", keepusing(q06 q07 q43 q02a q02b q02c q02d q03 q08a q08b q08c q10 q17 q39 q40 q88 q91)
+
+. drop if _m==2
+(8,852 observations deleted)
+
+. 
+. replace turnover_type=q06 if jahr==2008
+(1,420 real changes made)
+
+. replace turnover=q07 if jahr==2008
+(1,235 real changes made)
+
+. replace grosspay=q43 if jahr==2008
+(1,420 real changes made)
+
+. 
+. replace relocated=1 if (q02a==1 | q02b==1 | q02c==1) & jahr==2008
+(26 real changes made)
+
+. replace relocated=0 if (q02a==0 & q02b==0 & q02c==0) & jahr==2008
+(1,389 real changes made)
+
+. 
+. replace integrated=1 if q03==1 & jahr==2008
+(21 real changes made)
+
+. replace integrated=0 if q03==2 & jahr==2008
+(1,385 real changes made)
+
+. 
+. 
+. replace exports_west_germany=q08a if q08a!=-9 & jahr==2008
+(1,361 real changes made)
+
+. replace exports_east_germany=q08b if q08b!=-9 & jahr==2008
+(1,361 real changes made)
+
+. replace exports_foreign=q08c if q08c!=-9 & jahr==2008
+(1,364 real changes made)
+
+. 
+. replace int_inputs=q10 if q10!=-9 & jahr==2008
+(1,144 real changes made)
+
+. 
+. replace investment=q17 if q17!=-9 & jahr==2008
+(820 real changes made)
+
+. replace investment=0 if q17==. & jahr==2008 & _m==3
+(561 real changes made)
+
+. 
+. replace collective_agreement=q39 if q39!=-9 & jahr==2008
+(1,417 real changes made)
+
+. replace industry_agreement=q40 if q40!=-9 & jahr==2008
+(847 real changes made)
+
+. 
+. replace ownership_structure=q88 if q88!=-9 & jahr==2008
+(1,413 real changes made)
+
+. replace single_establishment=1 if q88==1 & jahr==2008
+(1,092 real changes made)
+
+. replace single_establishment=0 if q88!=1 & q88!=-9 & _m==3 & jahr==2008
+(337 real changes made)
+
+. 
+. replace parent_ownership=q91 if q91!=-9 & jahr==2008
+(1,394 real changes made)
+
+. replace foreign_parent=1 if q91==3 & jahr==2008
+(49 real changes made)
+
+. replace foreign_parent=0 if q91!=3 &  q91!=-9 & jahr==2008 & _m==3
+(1,361 real changes made)
+
+. 
+. 
+. drop q06 q07 q43 q02a q02b q02c q02d q03 q08a q08b q08c q10 q17 q39 q40 q88 q91
+
+. drop _m
+
+. 
+. *2008 survey - match to 2007 data
+. quietly merge m:1 idnum using "${orig}/iabbp_2008.dta", keepusing(p09 p10 p63 p02a p02b p02c p03 p11a p11b p11c p13 p19 p59 p60 p91 p94)
+
+. drop if _m==2
+(8,531 observations deleted)
+
+. 
+. replace turnover_type=p09 if jahr==2007
+(1,358 real changes made)
+
+. replace turnover=p10 if jahr==2007
+(1,180 real changes made)
+
+. replace grosspay=p63 if jahr==2007
+(1,358 real changes made)
+
+. 
+. 
+. replace relocated=1 if (p02a==1 | p02b==1 | p02c==1) & jahr==2007
+(33 real changes made)
+
+. replace relocated=0 if (p02a==0 & p02b==0 & p02c==0) & jahr==2007
+(1,320 real changes made)
+
+. 
+. replace integrated=1 if p03==1 & jahr==2007
+(25 real changes made)
+
+. replace integrated=0 if p03==2 & jahr==2007
+(1,318 real changes made)
+
+. 
+. 
+. replace exports_west_germany=p11a if p11a!=-9 & jahr==2007
+(1,323 real changes made)
+
+. replace exports_east_germany=p11b if p11b!=-9 & jahr==2007
+(1,323 real changes made)
+
+. replace exports_foreign=p11c if p11c!=-9 & jahr==2007
+(1,325 real changes made)
+
+. 
+. replace int_inputs=p13 if p13!=-9 & jahr==2007
+(1,130 real changes made)
+
+. 
+. replace investment=p19 if p19!=-9 & jahr==2007
+(775 real changes made)
+
+. replace investment=0 if p19==. & jahr==2007 & _m==3
+(558 real changes made)
+
+. 
+. replace collective_agreement=p59 if p59!=-9 & jahr==2007
+(1,354 real changes made)
+
+. replace industry_agreement=p60 if p60!=-9 & jahr==2007
+(765 real changes made)
+
+. 
+. replace ownership_structure=p91 if p91!=-9 & jahr==2007
+(1,340 real changes made)
+
+. replace single_establishment=1 if p91==1 & jahr==2007
+(1,028 real changes made)
+
+. replace single_establishment=0 if p91!=1 & jahr==2007 & p91!=-9 & _m==3
+(320 real changes made)
+
+. 
+. replace parent_ownership=p94 if p94!=-9 & jahr==2007
+(1,334 real changes made)
+
+. replace foreign_parent=1 if p94==3 & jahr==2007
+(58 real changes made)
+
+. replace foreign_parent=0 if p94!=3 & jahr==2007 & p94!=-9 & _m==3
+(1,284 real changes made)
+
+. 
+. 
+. drop p09 p10 p63 p02a p02b p02c p03 p11a p11b p11c p13 p19 p59 p60 p91 p94
+
+. drop _m
+
+. 
+. *2007 survey - match to 2006 data
+. quietly merge m:1 idnum using "${orig}/iabbp_2007.dta", keepusing(o08 o09 o85 o02a o02b o02c o02d o02e o04 o10a o10b o10c o10d o10e o12 o18 o81 o82 o90 o92)
+
+. drop if _m==2
+(8,454 observations deleted)
+
+. 
+. replace turnover_type=o08 if jahr==2006
+(1,308 real changes made)
+
+. replace turnover=o09 if jahr==2006
+(1,100 real changes made)
+
+. replace grosspay=o85 if jahr==2006
+(1,308 real changes made)
+
+. 
+. replace relocated=1 if (o02a==1 | o02b==1 | o02c==1 | o02d==1 | o02e==1) & jahr==2006
+(43 real changes made)
+
+. replace relocated=0 if (o02a==0 & o02b==0 & o02c==0 & o02d==0 & o02e==0) & jahr==2006
+(1,257 real changes made)
+
+. 
+. replace integrated=1 if o04==1 & jahr==2006
+(34 real changes made)
+
+. replace integrated=0 if o04==2 & jahr==2006
+(1,261 real changes made)
+
+. 
+. 
+. replace exports_west_germany=o10a if o10a!=-9 & jahr==2006
+(1,237 real changes made)
+
+. replace exports_east_germany=o10b if o10b!=-9 & jahr==2006
+(1,238 real changes made)
+
+. replace exports_foreign=o10c+o10d+o10e if o10c!=-9 & o10d!=-9 & o10e!=-9 & jahr==2006
+(1,244 real changes made)
+
+. 
+. replace int_inputs=o12 if o12!=-9 & jahr==2006
+(1,036 real changes made)
+
+. 
+. replace investment=o18 if o18!=-9 & jahr==2006
+(819 real changes made)
+
+. replace investment=0 if o18==. & jahr==2006 & _m==3
+(464 real changes made)
+
+. 
+. replace collective_agreement=o81 if o81!=-9 & jahr==2006
+(1,302 real changes made)
+
+. replace industry_agreement=o82 if o82!=-9 & jahr==2006
+(733 real changes made)
+
+. 
+. replace ownership_structure=o90 if o90!=-9 & jahr==2006
+(1,300 real changes made)
+
+. replace single_establishment=1 if o90==1 & jahr==2006
+(965 real changes made)
+
+. replace single_establishment=0 if o90!=1 & jahr==2006 & o90!=-9 & _m==3
+(346 real changes made)
+
+. 
+. replace parent_ownership=o92 if o92!=-9 & jahr==2006
+(1,283 real changes made)
+
+. replace foreign_parent=1 if o92==3 & jahr==2006
+(57 real changes made)
+
+. replace foreign_parent=0 if o92!=3 & jahr==2006 & o92!=-9 & _m==3
+(1,237 real changes made)
+
+. 
+. drop o08 o09 o85 o02a o02b o02c o02d o02e o04 o10a o10b o10c o10d o10e o12 o18 o81 o82 o90 o92
+
+. drop _m
+
+. 
+. *2006 survey - match to 2005 data
+. quietly merge m:1 idnum using "${orig}/iabbp_2006.dta", keepusing(n07 n08 n83 n02aa n02ab n02ac n03 n09a n09b n09c n09d n09e n10 n15 n79 n80 n86 n92)
+
+. drop if _m==2
+(8,970 observations deleted)
+
+. 
+. replace turnover_type=n07 if jahr==2005
+(1,267 real changes made)
+
+. replace turnover=n08 if jahr==2005
+(1,064 real changes made)
+
+. replace grosspay=n83 if jahr==2005
+(1,267 real changes made)
+
+. 
+. replace relocated=1 if (n02aa==1 | n02ab==1 | n02ac==1) & jahr==2005
+(41 real changes made)
+
+. replace relocated=0 if (n02aa==0 & n02ab==0 & n02ac==0) & jahr==2005
+(1,223 real changes made)
+
+. 
+. replace integrated=1 if n03==1 & jahr==2005
+(29 real changes made)
+
+. replace integrated=0 if n03==2 & jahr==2005
+(1,224 real changes made)
+
+. 
+. 
+. replace exports_west_germany=n09a if n09a!=-9 & jahr==2005
+(1,201 real changes made)
+
+. replace exports_east_germany=n09b if n09b!=-9 & jahr==2005
+(1,200 real changes made)
+
+. replace exports_foreign=n09c+n09d+n09e if n09c!=-9 & n09d!=-9 & n09e!=-9 & jahr==2005
+(1,201 real changes made)
+
+. 
+. replace int_inputs=n10 if n10!=-9 & jahr==2005
+(1,026 real changes made)
+
+. 
+. replace investment=n15 if n15!=-9 & jahr==2005
+(722 real changes made)
+
+. replace investment=0 if n15==. & jahr==2005 & _m==3
+(528 real changes made)
+
+. 
+. replace collective_agreement=n79 if n79!=-9 & jahr==2005
+(1,262 real changes made)
+
+. replace industry_agreement=n80 if n80!=-9 & jahr==2005
+(678 real changes made)
+
+. 
+. replace ownership_structure=n86 if n86!=-9 & jahr==2005
+(1,260 real changes made)
+
+. replace single_establishment=1 if n86==1 & jahr==2005
+(971 real changes made)
+
+. replace single_establishment=0 if n86!=1 & jahr==2005 & n86!=-9 & _m==3
+(312 real changes made)
+
+. 
+. replace parent_ownership=n92 if n92!=-9 & jahr==2005
+(1,221 real changes made)
+
+. replace foreign_parent=1 if n92==3 & jahr==2005
+(51 real changes made)
+
+. replace foreign_parent=0 if n92!=3 & jahr==2005 & n92!=-9 & _m==3
+(1,193 real changes made)
+
+. 
+. 
+. drop n07 n08 n83 n02aa n02ab n02ac n03 n09a n09b n09c n09d n09e n10 n15 n79 n80 n86 n92
+
+. drop _m
+
+. 
+. 
+. 
+. 
+. *2005 survey - match to 2004 data
+. quietly merge m:1 idnum using "${orig}/iabbp_2005.dta", keepusing(m02aa m02ab m02ac m03 m12a m12b m12c m12d m12e m13 m19 m52 m53 m91 m88 m07 m08 m59)
+
+. drop if _m==2
+(9,200 observations deleted)
+
+. 
+. replace turnover_type=m07 if jahr==2004
+(1,298 real changes made)
+
+. replace turnover=m08 if jahr==2004
+(1,298 real changes made)
+
+. replace grosspay=m59 if jahr==2004
+(1,298 real changes made)
+
+. 
+. replace relocated=1 if (m02aa==1 | m02ab==1 | m02ac==1) & jahr==2004
+(54 real changes made)
+
+. replace relocated=0 if (m02aa==0 & m02ab==0 & m02ac==0) & jahr==2004
+(1,242 real changes made)
+
+. 
+. replace integrated=1 if m03==1 & jahr==2004
+(41 real changes made)
+
+. replace integrated=0 if m03==2 & jahr==2004
+(1,253 real changes made)
+
+. 
+. 
+. replace exports_west_germany=m12a if m12a!=-9 & jahr==2004
+(1,258 real changes made)
+
+. replace exports_east_germany=m12b if m12b!=-9 & jahr==2004
+(1,257 real changes made)
+
+. replace exports_foreign=m12c+m12d+m12e if m12c!=-9 & m12d!=-9 & m12e!=-9 & jahr==2004
+(1,259 real changes made)
+
+. 
+. replace int_inputs=m13 if m13!=-9 & jahr==2004
+(1,103 real changes made)
+
+. 
+. replace investment=m19 if m19!=-9 & jahr==2004
+(764 real changes made)
+
+. replace investment=0 if m19==. & jahr==2004 & _m==3
+(514 real changes made)
+
+. 
+. replace collective_agreement=m52 if m52!=-9 & jahr==2004
+(1,297 real changes made)
+
+. replace industry_agreement=m53 if m53!=-9 & jahr==2004
+(696 real changes made)
+
+. 
+. replace ownership_structure=m88 if m88!=-9 & jahr==2004
+(1,266 real changes made)
+
+. replace single_establishment=1 if m88==1 & jahr==2004
+(934 real changes made)
+
+. replace single_establishment=0 if m88!=1 & jahr==2004 & m88!=-9 & _m==3
+(356 real changes made)
+
+. 
+. replace parent_ownership=m91 if m91!=-9 & jahr==2004
+(1,258 real changes made)
+
+. replace foreign_parent=1 if m91==3 & jahr==2004
+(52 real changes made)
+
+. replace foreign_parent=0 if m91!=3 & jahr==2004 & m91!=-9 & _m==3
+(1,230 real changes made)
+
+. 
+. drop m07 m08 m59 m02aa m02ab m02ac m03 m12a m12b m12c m12d m12e m13 m19 m52 m53 m91 m88
+
+. drop _m
+
+. 
+. 
+. 
+. *2004 survey - match to 2003 data
+. quietly merge m:1 idnum using "${orig}/iabbp_2004.dta", keepusing(l08 l09 l68 l02a l02b l02c l03 l13a l13b l13c l13d l13e l14 l16 l91 l89 l64 l65)
+
+. drop if _m==2
+(9,013 observations deleted)
+
+. 
+. replace turnover_type=l08 if jahr==2003
+(1,308 real changes made)
+
+. replace turnover=l09 if jahr==2003
+(1,308 real changes made)
+
+. replace grosspay=l68 if jahr==2003
+(1,308 real changes made)
+
+. 
+. 
+. replace relocated=1 if (l02a==1 | l02b==1 | l02c==1) & jahr==2003
+(66 real changes made)
+
+. replace relocated=0 if (l02a==0 & l02b==0 & l02c==0) & jahr==2003
+(1,235 real changes made)
+
+. 
+. replace integrated=1 if l03==1 & jahr==2003
+(27 real changes made)
+
+. replace integrated=0 if l03==2 & jahr==2003
+(1,270 real changes made)
+
+. 
+. 
+. replace exports_west_germany=l13a if l13a!=-9 & jahr==2003
+(1,255 real changes made)
+
+. replace exports_east_germany=l13b if l13b!=-9 & jahr==2003
+(1,256 real changes made)
+
+. replace exports_foreign=l13c+l13d+l13e if l13c!=-9 & l13d!=-9 & l13e!=-9 & jahr==2003
+(1,256 real changes made)
+
+. 
+. replace int_inputs=l14 if l14!=-9 & jahr==2003
+(1,112 real changes made)
+
+. 
+. replace investment=l16 if l16!=-9 & jahr==2003
+(725 real changes made)
+
+. replace investment=0 if l16==. & jahr==2003 & _m==3
+(571 real changes made)
+
+. 
+. replace collective_agreement=l64 if l64!=-9 & jahr==2003
+(1,307 real changes made)
+
+. replace industry_agreement=l65 if l65!=-9 & jahr==2003
+(637 real changes made)
+
+. 
+. replace ownership_structure=l89 if l89!=-9 & jahr==2003
+(1,288 real changes made)
+
+. replace single_establishment=1 if l89==1 & jahr==2003
+(931 real changes made)
+
+. replace single_establishment=0 if l89!=1 & jahr==2003 & l89!=-9 & _m==3
+(385 real changes made)
+
+. 
+. replace parent_ownership=l91 if l91!=-9 & jahr==2003
+(1,281 real changes made)
+
+. replace foreign_parent=1 if l91==3 & jahr==2003
+(63 real changes made)
+
+. replace foreign_parent=0 if l91!=3 & jahr==2003 & _m==3 & l91!=-9
+(1,246 real changes made)
+
+. 
+. drop l08 l09 l68 l02a l02b l02c l03 l13a l13b l13c l13d l13e l14 l16 l91 l89 l64 l65
+
+. drop _m
+
+. 
+. 
+. 
+. ******************************************************************************************
+. 
+. replace turnover=. if turnover==-9 | turnover==-8
+(2,260 real changes made, 2,260 to missing)
+
+. replace grosspay=. if grosspay==-9 | grosspay==-8
+(2,146 real changes made, 2,146 to missing)
+
+. 
+. *turnover_type==-9 | turnover_type>1 |
+. drop begorig endorig begepi endepi quelle spell frau gebjahr ausbildung schule tentgelt_gr teilzeit gleitz wo_bula mon_erw mon_bet mon_job mon_lst erwstat_gr grund_gr grund_orig west_wo tentgelt_orig beruf_gr occ citizenship tent_dup tot_days share_in_e
+> stab tot_earn1 daily_wage rank new_entrant college college1 age avg_german citizenship_change always_german imm_count1 total_count1 imm_count total_count nation_single foreign_nation1 foreign_nation year_first age_first nation_single_alt immigrant_not_e
+> nter german eu_orig1 eu_orig2 eu_2000 turkey yugoslavia europe_other asia africa_me americas max_income main_obs manual service professional occ_broad tot
+
+. 
+. 
+. * Add the weights  
+. 
+. label val w93_3_gen w93_3_gen_en
+
+. 
+. 
+. gen weight_survey=.
+(15,807 missing values generated)
+
+. 
+. 
+. foreach x of numlist 2004 2005 2006 2007 2008 2009 2010 2011 2012 {
+  2. 
+. quietly merge m:1 idnum using "${orig}/iabbp_`x'.dta", keepusing(hr`x'q)
+  3. drop if _m==2
+  4. 
+. replace weight_survey=hr`x'q if jahr==`x'-1
+  5. 
+. drop _m hr`x'q
+  6. 
+. }
+(9,013 observations deleted)
+(1,306 real changes made)
+(9,200 observations deleted)
+(1,297 real changes made)
+(8,970 observations deleted)
+(1,266 real changes made)
+(8,454 observations deleted)
+(1,307 real changes made)
+(8,531 observations deleted)
+(1,357 real changes made)
+(8,852 observations deleted)
+(1,418 real changes made)
+(9,344 observations deleted)
+(1,539 real changes made)
+(9,317 observations deleted)
+(1,716 real changes made)
+(9,964 observations deleted)
+(1,974 real changes made)
+
+. 
+. replace weight_survey=round(weight_survey)
+(1,504 real changes made)
+
+. 
+. 
+. gen missing_turnover=(turnover==.)
+
+. gen missing_weight=(weight_survey==.)
+
+. 
+. 
+. * Deflate wagebill - turnover 
+. 
+. merge m:1 jahr using "${orig}/cpigermany.dta"
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                            40
+        from master                         0  (_merge==1)
+        from using                         40  (_merge==2)
+
+    Matched                            15,807  (_merge==3)
+    -----------------------------------------
+
+. drop if _m==2
+(40 observations deleted)
+
+. drop _m rate yrly
+
+. 
+. foreach x of varlist wbill_tot_tot wbill_german_tot wbill_eu_orig1_tot wbill_eu_orig2_tot wbill_eu_2000_tot wbill_turkey_tot wbill_yugoslavia_tot wbill_europe_other_tot wbill_asia_tot wbill_africa_me_tot wbill_americas_tot turnover grosspay investment w
+> bill_tot_college wbill_german_college wbill_tot_young wbill_german_young  wbill_tot_tenure5 wbill_german_tenure5 wbill_tot_experience10 wbill_german_experience10 {
+  2. replace `x'=`x'*deflator
+  3. }
+(15,805 real changes made)
+(15,437 real changes made)
+(3,299 real changes made)
+(3,656 real changes made)
+(3,884 real changes made)
+(3,840 real changes made)
+(3,422 real changes made)
+(4,146 real changes made)
+(3,832 real changes made)
+(3,418 real changes made)
+(3,059 real changes made)
+(9,519 real changes made)
+(10,845 real changes made)
+(7,620 real changes made)
+(5,852 real changes made)
+(5,399 real changes made)
+(14,380 real changes made)
+(13,912 real changes made)
+(14,344 real changes made)
+(13,915 real changes made)
+(14,185 real changes made)
+(13,700 real changes made)
+
+. 
+. 
+. save "${data}/establishment_level_liab.dta", replace
+file /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/data/establishment_level_liab.dta saved
+
+. 
+. 
+end of do-file
+
+. do "${prog}/5_dataset_for_instrument_validation.do"
+
+. cap log close

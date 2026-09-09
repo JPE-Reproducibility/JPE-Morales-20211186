@@ -176,5 +176,65 @@ replace dist_event_year = 5 if dist_event_year > 4
 table dist_event_year if sample_hire5==1, stat(p50 nhir_imm_sh) stat(mean nhir_imm_sh) stat(sd nhir_imm_sh) stat(count nhir_imm_sh)
 
 
+/*==============================================================================
+  FIGURES (added for JPE reproducibility deposit — not part of the original
+  submission). This section does not modify any of the analysis above; it only
+  recomputes the same statistics shown in the two `table` calls above (which
+  only print, and do not save a dataset) and plots them, since Figure A5 in
+  the original submission was turned into a figure in Excel from this table.
+
+  NOTE ON EXACT APPEARANCE: the published Figure A5 was built by hand in
+  Excel from this table (styling, colors, markers chosen by the authors).
+  The Stata graphs below plot the same underlying numbers but will not look
+  pixel-identical to the paper's version (font, colors, marker style, axis
+  formatting, etc. all differ) -- only the data displayed is the same.
+
+  Output: sieed_analysis/output/figure_A5a.jpg, figure_A5b.jpg
+==============================================================================*/
+
+preserve
+    collapse (p50)  med_ft  = nhir_imm_ft  (mean) mean_ft = nhir_imm_ft  ///
+             (sd)   sd_ft   = nhir_imm_ft  (count) n_ft   = nhir_imm_ft  ///
+             (p50)  med_sh  = nhir_imm_sh  (mean) mean_sh = nhir_imm_sh  ///
+             (sd)   sd_sh   = nhir_imm_sh  (count) n_sh   = nhir_imm_sh  ///
+             if sample_hire5==1, by(dist_event_year)
+
+    gen se_ft    = sd_ft / sqrt(n_ft)
+    gen ci_lo_ft = mean_ft - 1.96*se_ft
+    gen ci_hi_ft = mean_ft + 1.96*se_ft
+    gen se_sh    = sd_sh / sqrt(n_sh)
+    gen ci_lo_sh = mean_sh - 1.96*se_sh
+    gen ci_hi_sh = mean_sh + 1.96*se_sh
+
+    label define distlbl 0 "0" 1 "1" 2 "2" 3 "3" 4 "4" 5 "5+"
+    label values dist_event_year distlbl
+
+    set scheme s1color
+    global figout = subinstr("${prog}", "/prog", "/output", 1)
+    cap mkdir "${figout}"
+
+    twoway (rcap ci_lo_ft ci_hi_ft dist_event_year, lcolor(navy%40)) ///
+           (connected mean_ft dist_event_year, lcolor(navy)   mcolor(navy)   msymbol(O)) ///
+           (connected med_ft  dist_event_year, lcolor(maroon) mcolor(maroon) msymbol(Dh) lpattern(dash)), ///
+           xlabel(0/5, valuelabel) xtitle("Periods since first immigrant hire", size(small)) ///
+           ytitle("Number of immigrant new hires", size(small)) ///
+           legend(order(2 "Mean" 3 "Median") cols(1) ring(0) position(11) region(lstyle(none)) size(small)) ///
+           graphregion(color(white)) plotregion(color(white)) ysize(4.5) xsize(6.5) ///
+           title("Figure A5(a): Number of immigrant new hires", size(medium)) ///
+           name(figA5a, replace)
+    graph export "${figout}/figure_A5a.jpg", replace width(2000) height(1500)
+
+    twoway (rcap ci_lo_sh ci_hi_sh dist_event_year, lcolor(navy%40)) ///
+           (connected mean_sh dist_event_year, lcolor(navy)   mcolor(navy)   msymbol(O)) ///
+           (connected med_sh  dist_event_year, lcolor(maroon) mcolor(maroon) msymbol(Dh) lpattern(dash)), ///
+           xlabel(0/5, valuelabel) xtitle("Periods since first immigrant hire", size(small)) ///
+           ytitle("Immigrant share among new hires", size(small)) ///
+           legend(order(2 "Mean" 3 "Median") cols(1) ring(0) position(11) region(lstyle(none)) size(small)) ///
+           graphregion(color(white)) plotregion(color(white)) ysize(4.5) xsize(6.5) ///
+           title("Figure A5(b): Immigrant share among new hires", size(medium)) ///
+           name(figA5b, replace)
+    graph export "${figout}/figure_A5b.jpg", replace width(2000) height(1500)
+restore
+
 
 log close

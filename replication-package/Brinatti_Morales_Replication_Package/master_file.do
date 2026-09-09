@@ -16,7 +16,7 @@ Instructions
 *****Part 1: Change directory**********
 
 clear all
-global root "CHANGE_ME/Brinatti_Morales_Replication_Package"
+global root "/Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package"
 * Example (author's machine): global root "C:/Users/E1NXM04/Dropbox/Brinatti_Morales_Replication_Package"
 
 

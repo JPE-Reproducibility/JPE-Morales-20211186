@@ -667,5 +667,37 @@ di ""
 di "Notes: 95% CIs computed as estimate +/- 1.96*SE."
 di "       Omitted group = Germans (nation_single = 1)."
 
+
+/*==============================================================================
+  FIGURE (added for JPE reproducibility deposit — not part of the original
+  submission). This section does not modify any of the analysis above; it only
+  plots the Figure A9 dataset already built and listed above, since Figure A9
+  in the original submission was turned into a figure in Excel from this
+  underlying table.
+
+  NOTE ON EXACT APPEARANCE: the published Figure A9 was built by hand in
+  Excel from this table (styling, colors, markers chosen by the authors).
+  The Stata graph below plots the same underlying numbers but will not look
+  pixel-identical to the paper's version (font, colors, marker style, axis
+  formatting, etc. all differ) -- only the data displayed is the same.
+
+  Output: liab_analysis/output/figure_A9.jpg
+==============================================================================*/
+
+set scheme s1color
+global figout = subinstr("${prog}", "/prog", "/output", 1)
+cap mkdir "${figout}"
+
+twoway (scatter wage_beta sorting_fe, mcolor(navy) msymbol(O)), ///
+       xline(0, lpattern(dot) lcolor(gs8)) yline(0, lpattern(dot) lcolor(gs8)) ///
+       xtitle("Sorting FE (manual/language ratio, relative to Germans)", size(small)) ///
+       ytitle("Wage beta (manual-task wage premium, relative to Germans)", size(small)) ///
+       legend(off) graphregion(color(white)) plotregion(color(white)) ///
+       ysize(4.5) xsize(6.5) ylabel(, format(%5.2f)) ///
+       title("Figure A9: Occupational sorting vs. comparative advantage", size(medium)) ///
+       name(figA9, replace)
+graph export "${figout}/figure_A9.jpg", replace width(2000) height(1500)
+
+
 log close
 

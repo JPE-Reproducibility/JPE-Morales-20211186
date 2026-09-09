@@ -1,0 +1,437 @@
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/log/9_kappa_estimation.log
+  log type:  text
+ opened on:   9 Sep 2026, 15:16:45
+
+. 
+. * Kappa estimation: elasticity of substitution across immigrant origin countries
+. * Agostina Brinatti & Nicolas Morales
+. * Source data: LIAB Longitudinal Model (version 1993-2014), IAB
+. 
+. /*      This dofile estimates kappa (equation 47, Appendix C.1) and constructs
+>         the CES composite of immigrant effective labour units used in the epsilon
+>         regressions (dofiles 10-13).
+> 
+>         Regression (equation 47):
+>           log(WageBill_ojt) = beta log(Emp_ojt) + FE_okt + FE_jt + FE_oj + u
+>           kappa = 1 / (1 - beta_hat)
+> 
+>         Output in this dofile:
+>           Table 1 - Kappa estimate cited in Appendix C.1
+> 
+>         Saved intermediate datasets:
+>           ${data}/sample_epsilon_estimation.dta         — sample flag for epsilon
+>           ${data}/dataset_immigrant_effective_units.dta — CES composite
+> 
+>         FDZ note: N (unweighted) reported via di after each regression.
+> */
+. 
+. 
+. /*
+> 
+> Input datasets:
+> (i) "${data}/dataset_epsilon_estimation.dta": firm-year level used to select the sample following the same criteria than validation regressions
+> (ii) "${data}/dataset_kappa_estimation.dta": wage and employment data by firm-origin-year used to estimate kappa
+> 
+> Output datasets:
+> (i) "${data}/dataset_immigrant_effective_units.dta":
+> (ii) "${data}/sample_epsilon_estimation.dta": the sample of firms that has the same restrictions as in for validation excercises and makes it to the epsilon regression
+> 
+> *This do file estimates kappa and compute the efficient units of immigrant share that will be later used to estimate epsilon 
+> 
+> */
+. 
+. 
+. clear
+
+. 
+. set more off
+
+. set matsize 10000
+set matsize ignored.
+    Matrix sizes are no longer limited by c(matsize) in modern Statas.  Matrix sizes are now limited by edition of Stata.  See limits for more details.
+
+. set linesize 255
+
+. set seed 1234
+
+. 
+. capture adopath++ ${prog}
+
+. 
+. 
+. 
+. *-------------------------------------------------------------------------------
+. * Keep the sample that will be used in the upper nest estimation 
+. *-------------------------------------------------------------------------------
+. 
+. preserve 
+
+. 
+. *Firm-level dataset 
+. 
+. use "${data}/dataset_epsilon_estimation.dta", clear
+
+. 
+. * Restrict the sample in the same way as we do for the validation regressions
+. 
+. keep if jahr>=2008 & jahr<=2011 & min_emp>=10 & count_missrev>=2 & turnover_type==1
+(9,596 observations deleted)
+
+. gen sample_rev=1
+
+. 
+. * Keep one observation per firm-year 
+. 
+. duplicates drop betnr jahr, force
+
+Duplicates in terms of betnr jahr
+
+(0 observations are duplicates)
+
+. 
+. * Run the regression to generate the sample that will be included in the
+. 
+. ivreghdfe  l_emp_imm_nat  (l_wbill_imm_nat = iv_r_shift_sharew_o_f )   if sample_rev==1, absorb(betnr rt_fe kt_fe)
+(dropped 185 singleton observations)
+(MWFE estimator converged in 26 iterations)
+
+IV (2SLS) estimation
+--------------------
+
+Estimates efficient for homoskedasticity only
+Statistics consistent for homoskedasticity only
+
+                                                      Number of obs =      185
+                                                      F(  1,    38) =     0.02
+                                                      Prob > F      =   0.8951
+Total (centered) SS     =  12.89203888                Centered R2   =   0.1900
+Total (uncentered) SS   =  12.89203888                Uncentered R2 =   0.1900
+Residual SS             =  10.44241092                Root MSE      =    .5242
+
+---------------------------------------------------------------------------------
+  l_emp_imm_nat | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+----------------+----------------------------------------------------------------
+l_wbill_imm_nat |   .1124565   .8469058     0.13   0.895    -1.602015    1.826928
+---------------------------------------------------------------------------------
+Underidentification test (Anderson canon. corr. LM statistic):           2.569
+                                                   Chi-sq(1) P-val =    0.1090
+------------------------------------------------------------------------------
+Weak identification test (Cragg-Donald Wald F statistic):                0.535
+Stock-Yogo weak ID test critical values: 10% maximal IV size             16.38
+                                         15% maximal IV size              8.96
+                                         20% maximal IV size              6.66
+                                         25% maximal IV size              5.53
+Source: Stock-Yogo (2005).  Reproduced by permission.
+------------------------------------------------------------------------------
+Sargan statistic (overidentification test of all instruments):           0.000
+                                                 (equation exactly identified)
+------------------------------------------------------------------------------
+Instrumented:         l_wbill_imm_nat
+Excluded instruments: iv_r_shift_sharew_o_f
+Partialled-out:       _cons
+                      nb: total SS, model F and R2s are after partialling-out;
+                          any small-sample adjustments include partialled-out
+                          variables in regressor count K
+------------------------------------------------------------------------------
+
+Absorbed degrees of freedom:
+-----------------------------------------------------+
+ Absorbed FE | Categories  - Redundant  = Num. Coefs |
+-------------+---------------------------------------|
+       betnr |        65           0          65     |
+       rt_fe |        73          23          50     |
+       kt_fe |        45          14          31    ?|
+-----------------------------------------------------+
+? = number of redundant parameters may be higher
+
+. 
+. gen sample_epsilon=e(sample)
+
+. 
+. keep sample_epsilon betnr jahr
+
+. 
+. save "${data}/sample_epsilon_estimation.dta", replace
+(file /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/data/sample_epsilon_estimation.dta not found)
+file /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/data/sample_epsilon_estimation.dta saved
+
+. 
+. restore
+
+. 
+. *-------------------------------------------------------------------------------
+. * Estimate Kappa
+. *-------------------------------------------------------------------------------
+. 
+. use "${data}/dataset_kappa_estimation.dta", clear
+
+. 
+. preserve 
+
+. 
+. *Drop natives
+. drop if nation_single==1
+(831,074 observations deleted)
+
+. 
+. 
+. *Keep firms in sample of epsilon estimation 
+. 
+. merge m:1 betnr jahr using "${data}/sample_epsilon_estimation.dta" 
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                       100,033
+        from master                    99,453  (_merge==1)
+        from using                        580  (_merge==2)
+
+    Matched                             2,442  (_merge==3)
+    -----------------------------------------
+
+. drop _merge
+
+. 
+. keep if sample_epsilon ==1  
+(101,323 observations deleted)
+
+. 
+. 
+. *nation_single-betnr-jahr-level data
+. duplicates drop nation_single betnr jahr w93_3_gen, force 
+
+Duplicates in terms of nation_single betnr jahr w93_3_gen
+
+(692 observations deleted)
+
+. duplicates drop nation_single betnr jahr, force /*verify no new drop*/
+
+Duplicates in terms of nation_single betnr jahr
+
+(0 observations are duplicates)
+
+. 
+. *Fixed effects 
+. egen id_f_o             = group(betnr nation_single)
+(5 missing values generated)
+
+. egen id_f_t             = group(betnr jahr)
+
+. egen id_o_2k_t  = group(nation_single ind_2dig jahr)
+(5 missing values generated)
+
+. 
+. 
+. ****************************
+. * Table 1
+. * Kappa estimate — Appendix C.1
+. ****************************
+. 
+. * Variables: l_wemp (log wage bill of origin group o at establishment j in year t),
+. *   l_emp (log employment of same group); kappa = 1/(1 - beta_hat)
+. * Selection: Immigrant workers only (nation_single != 1); establishments in the
+. *   epsilon sample (2008-2011, >= 10 employees, revenue available,
+. *   sample_epsilon == 1); one observation per origin x establishment x year
+. * FE: origin x 2-digit-industry x year (id_o_2k_t), establishment x year (id_f_t),
+. *   origin x establishment (id_f_o); SE clustered at id_f_o
+. * Table reports beta and implied kappa via nlcom.
+. * N (unweighted) reported via di after regression.
+. 
+. *Estimation of kappa 
+. 
+. gen l_emp  = log(nemp_oft)
+
+. gen l_wemp = log(wemp_oft)
+(1 missing value generated)
+
+. 
+. ivreghdfe l_wemp l_emp if sample_epsilon==1, absorb(i.id_o_2k_t   i.id_f_t i.id_f_o) cluster( id_f_o  )
+(dropped 226 singleton observations)
+(MWFE estimator converged in 12 iterations)
+
+OLS estimation
+--------------
+
+Estimates efficient for homoskedasticity only
+Statistics robust to heteroskedasticity and clustering on id_f_o
+
+Number of clusters (id_f_o) =       95                Number of obs =      228
+                                                      F(  1,    94) =   210.19
+                                                      Prob > F      =   0.0000
+Total (centered) SS     =  13.74653541                Centered R2   =   0.8232
+Total (uncentered) SS   =  13.74653541                Uncentered R2 =   0.8232
+Residual SS             =  2.430243066                Root MSE      =    .1567
+
+------------------------------------------------------------------------------
+             |               Robust
+      l_wemp | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+       l_emp |   .9956612   .0686758    14.50   0.000     .8593038    1.132018
+------------------------------------------------------------------------------
+Included instruments: l_emp
+Partialled-out:       _cons
+                      nb: total SS, model F and R2s are after partialling-out;
+                          any small-sample adjustments include partialled-out
+                          variables in regressor count K
+------------------------------------------------------------------------------
+
+Absorbed degrees of freedom:
+-----------------------------------------------------+
+ Absorbed FE | Categories  - Redundant  = Num. Coefs |
+-------------+---------------------------------------|
+   id_o_2k_t |        88           1          87     |
+      id_f_t |        63          22          41     |
+      id_f_o |        95          95           0    *|
+-----------------------------------------------------+
+* = FE nested within cluster; treated as redundant for DoF computation
+
+. nlcom (r21: 1 / (1-_b[l_emp]) ), post 
+
+         r21: 1 / (1-_b[l_emp])
+
+------------------------------------------------------------------------------
+      l_wemp | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         r21 |   230.4758   3647.995     0.06   0.950    -6919.463    7380.415
+------------------------------------------------------------------------------
+
+. 
+. quietly ivreghdfe l_wemp l_emp if sample_epsilon==1, absorb(i.id_o_2k_t   i.id_f_t i.id_f_o) cluster( id_f_o  )
+
+. local kappa_hat = 1/(1 - _b[l_emp] )
+
+. 
+. restore 
+
+. 
+. 
+. 
+. *-------------------------------------------------------------------------------
+. * Create immigrant labor bundle
+. *-------------------------------------------------------------------------------
+. 
+. preserve 
+
+. 
+. drop if nation_single==1
+(831,074 observations deleted)
+
+. 
+. egen okt_fe=group(nation_single ind_2dig jahr)
+(4,860 missing values generated)
+
+. egen ft_fe=group(betnr jahr) 
+
+. 
+. bysort nation_single betnr jahr: egen avg_wage_ojt=mean(tentgelt)
+
+. bysort nation_single betnr jahr: egen emp_ojt=sum(1)
+
+. 
+. duplicates drop betnr nation_single  jahr, force
+
+Duplicates in terms of betnr nation_single jahr
+
+(38,429 observations deleted)
+
+. 
+. gen lavg_wage=log(avg_wage_ojt)
+(755 missing values generated)
+
+. gen lcount_workers_num=log(emp_ojt)
+
+. 
+. 
+. local kappa_est=`kappa_hat'
+
+. 
+. gen dep_variable=lavg_wage-((-1)/`kappa_est')*lcount_workers_num
+(755 missing values generated)
+
+. 
+. quietly reghdfe dep_variable if jahr>=2003 & jahr<=2011, absorb(est_okt_fe=okt_fe ft_fe)
+
+. 
+. bysort nation_single jahr ind_2dig: egen est_okt_fe_1=mean(est_okt_fe)
+(37,034 missing values generated)
+
+. replace est_okt_fe=est_okt_fe_1 if est_okt_fe_1!=. & est_okt_fe==.
+(589 real changes made)
+
+. replace est_okt_fe=0 if est_okt_fe==.
+(37,034 real changes made)
+
+. gen est_fe_transform=exp(est_okt_fe)
+
+. 
+. gen count_work_temp=emp_ojt^((`kappa_est'-1)/`kappa_est')
+
+. replace count_work_temp=0 if nation_single==1 
+(0 real changes made)
+
+. 
+. bysort betnr jahr: egen imm_effective1=sum(count_work_temp*est_fe_transform)
+
+. gen imm_effective = imm_effective1^(`kappa_est'/(`kappa_est'-1))
+
+. 
+. drop dep_variable est_fe_transform est_okt_fe* count_work_temp imm_effective1
+
+. 
+.         keep betnr jahr imm_effective
+
+.         collapse (mean) imm_effective  , by(betnr jahr) 
+
+.         
+.         tempfile temp
+
+.         save `temp'
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000004 saved as .dta format
+
+. restore 
+
+. 
+.         merge m:1 betnr jahr using `temp'
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                       597,383
+        from master                   597,383  (_merge==1)
+        from using                          0  (_merge==2)
+
+    Matched                           335,586  (_merge==3)
+    -----------------------------------------
+
+.         drop _merge 
+
+. 
+.         gen emp_imm_eff = imm_effective
+(597,383 missing values generated)
+
+. 
+. * Save 
+. 
+. keep betnr jahr emp_imm_eff
+
+. duplicates drop 
+
+Duplicates in terms of all variables
+
+(879,708 observations deleted)
+
+. 
+. save "${data}/dataset_immigrant_effective_units.dta", replace
+(file /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/data/dataset_immigrant_effective_units.dta not found)
+file /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/liab_analysis/data/dataset_immigrant_effective_units.dta saved
+
+. 
+. 
+. 
+end of do-file
+
+. 
+. *Table C1
+. do "${prog}/10_epsilon_estimation.do"
+
+. cap log close

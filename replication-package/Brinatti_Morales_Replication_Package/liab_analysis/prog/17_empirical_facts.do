@@ -897,4 +897,178 @@ tabdisp mig_share_pct, c(N_a6b) concise
 tabdisp mig_share_pct, c(med_countries mean_countries) concise
 
 
+/*==============================================================================
+  FIGURES (added for JPE reproducibility deposit — not part of the original
+  submission). This section does not modify any of the analysis above; it only
+  re-reads the .dta files already saved by this do-file and plots them, since
+  the tables above are the FDZ-disclosed numbers underlying Figures 1, A1-A4,
+  and A6, which in the original submission were turned into figures in Excel.
+
+  NOTE ON EXACT APPEARANCE: the published figures were built by hand in Excel
+  from these disclosed tables (styling, colors, markers chosen by the
+  authors). The Stata graphs below plot the same underlying numbers but will
+  not look pixel-identical to the paper's versions (font, colors, marker
+  style, axis formatting, etc. all differ) -- only the data displayed is the
+  same.
+
+  Output: liab_analysis/output/figure_*.jpg
+==============================================================================*/
+
+set scheme s1color
+global figout = subinstr("${prog}", "/prog", "/output", 1)
+cap mkdir "${figout}"
+
+local xopts  xlabel(1/10, valuelabel angle(45) labsize(vsmall)) ///
+             xtitle("Establishment size bin (employment)", size(small))
+local gropts graphregion(color(white)) plotregion(color(white)) ysize(4.5) xsize(6.5) ylabel(, format(%5.2f))
+
+* ---- Figure 1: Median immigrant wage-bill share by size bin -----------------
+use "${data}/plot_data_main.dta", clear
+twoway (rcap ci_lo_mig_share ci_hi_mig_share decile_wbill, lcolor(navy%40)) ///
+       (connected mig_share decile_wbill, lcolor(navy) mcolor(navy) msymbol(O)), ///
+       ytitle("Immigrant wage-bill share (median)", size(small)) `xopts' `gropts' ///
+       legend(off) title("Figure 1: Immigrant share by establishment size", size(medium)) ///
+       name(fig1, replace)
+graph export "${figout}/figure_1.jpg", replace width(2000) height(1500)
+
+* ---- Figure A1(a): Controlling for industry and geography -------------------
+use "${data}/plot_data_main.dta", clear
+twoway (rcap ci_lo_noindloc ci_hi_noindloc decile_wbill, lcolor(maroon%40)) ///
+       (connected mig_share decile_wbill, lcolor(navy) mcolor(navy) msymbol(O)) ///
+       (connected mig_share_noindloc decile_wbill, lcolor(maroon) mcolor(maroon) msymbol(Dh)), ///
+       ytitle("Immigrant wage-bill share", size(small)) `xopts' `gropts' ///
+       legend(order(2 "Raw" 3 "Residualized (ind x yr, LLM x yr FE)") ///
+              cols(1) ring(0) position(11) region(lstyle(none)) size(small)) ///
+       title("Figure A1(a): Controlling for industry and geography", size(medium)) ///
+       name(figA1a, replace)
+graph export "${figout}/figure_A1a.jpg", replace width(2000) height(1500)
+
+* ---- Figure A1(b): Tradable vs. non-tradable ---------------------------------
+use "${data}/plot_data_main.dta", clear
+twoway (rcap ci_lo_t ci_hi_t decile_wbill, lcolor(navy%40)) ///
+       (rcap ci_lo_nt ci_hi_nt decile_wbill, lcolor(maroon%40)) ///
+       (connected mig_share_t  decile_wbill, lcolor(navy)   mcolor(navy)   msymbol(O)) ///
+       (connected mig_share_nt decile_wbill, lcolor(maroon) mcolor(maroon) msymbol(Dh)), ///
+       ytitle("Immigrant wage-bill share", size(small)) `xopts' `gropts' ///
+       legend(order(3 "Tradable" 4 "Non-tradable") cols(1) ring(0) position(11) ///
+              region(lstyle(none)) size(small)) ///
+       title("Figure A1(b): Tradable vs. non-tradable", size(medium)) name(figA1b, replace)
+graph export "${figout}/figure_A1b.jpg", replace width(2000) height(1500)
+
+* ---- Figure A1(c): Exporter vs. non-exporter ---------------------------------
+use "${data}/plot_data_main.dta", clear
+twoway (rcap ci_lo_exp ci_hi_exp decile_wbill, lcolor(navy%40)) ///
+       (rcap ci_lo_nexp ci_hi_nexp decile_wbill, lcolor(maroon%40)) ///
+       (connected mig_share_exp  decile_wbill, lcolor(navy)   mcolor(navy)   msymbol(O)) ///
+       (connected mig_share_nexp decile_wbill, lcolor(maroon) mcolor(maroon) msymbol(Dh)), ///
+       ytitle("Immigrant wage-bill share", size(small)) `xopts' `gropts' ///
+       legend(order(3 "Exporter" 4 "Non-exporter") cols(1) ring(0) position(11) ///
+              region(lstyle(none)) size(small)) ///
+       title("Figure A1(c): Exporter vs. non-exporter", size(medium)) name(figA1c, replace)
+graph export "${figout}/figure_A1c.jpg", replace width(2000) height(1500)
+
+* ---- Figure A1(d): Exporter vs. non-exporter, residualised ------------------
+use "${data}/plot_data_main.dta", clear
+twoway (rcap ci_lo_exp_nind ci_hi_exp_nind decile_wbill, lcolor(navy%40)) ///
+       (rcap ci_lo_nexp_nind ci_hi_nexp_nind decile_wbill, lcolor(maroon%40)) ///
+       (connected mig_share_exp_nind  decile_wbill, lcolor(navy)   mcolor(navy)   msymbol(O)) ///
+       (connected mig_share_nexp_nind decile_wbill, lcolor(maroon) mcolor(maroon) msymbol(Dh)), ///
+       ytitle("Immigrant wage-bill share (residualized)", size(small)) `xopts' `gropts' ///
+       legend(order(3 "Exporter" 4 "Non-exporter") cols(1) ring(0) position(11) ///
+              region(lstyle(none)) size(small)) ///
+       title("Figure A1(d): Exporter vs. non-exporter, residualised", size(medium)) ///
+       name(figA1d, replace)
+graph export "${figout}/figure_A1d.jpg", replace width(2000) height(1500)
+
+* ---- Figure A2(a): College vs. non-college -----------------------------------
+use "${data}/plot_data_coll.dta", clear
+merge 1:1 decile_wbill using "${data}/plot_data_ncoll.dta", nogenerate
+twoway (rcap ci_lo_coll ci_hi_coll decile_wbill, lcolor(navy%40)) ///
+       (rcap ci_lo_ncoll ci_hi_ncoll decile_wbill, lcolor(maroon%40)) ///
+       (connected mig_share_coll  decile_wbill, lcolor(navy)   mcolor(navy)   msymbol(O)) ///
+       (connected mig_share_ncoll decile_wbill, lcolor(maroon) mcolor(maroon) msymbol(Dh)), ///
+       ytitle("Immigrant wage-bill share", size(small)) `xopts' `gropts' ///
+       legend(order(3 "College" 4 "Non-college") cols(1) ring(0) position(11) ///
+              region(lstyle(none)) size(small)) ///
+       title("Figure A2(a): College vs. non-college", size(medium)) name(figA2a, replace)
+graph export "${figout}/figure_A2a.jpg", replace width(2000) height(1500)
+
+* ---- Figure A2(b): Single-establishment and German-owned firms --------------
+use "${data}/plot_data_main.dta", clear
+twoway (rcap ci_lo_mig_share ci_hi_mig_share decile_wbill, lcolor(navy%40)) ///
+       (rcap ci_lo_sing ci_hi_sing decile_wbill, lcolor(maroon%40)) ///
+       (rcap ci_lo_nfor ci_hi_nfor decile_wbill, lcolor(forest_green%40)) ///
+       (connected mig_share      decile_wbill, lcolor(navy)         mcolor(navy)         msymbol(O)) ///
+       (connected mig_share_sing decile_wbill, lcolor(maroon)       mcolor(maroon)       msymbol(Dh)) ///
+       (connected mig_share_nfor decile_wbill, lcolor(forest_green) mcolor(forest_green) msymbol(Th)), ///
+       ytitle("Immigrant wage-bill share", size(small)) `xopts' `gropts' ///
+       legend(order(4 "All establishments" 5 "Single-establishment" 6 "German-owned") ///
+              cols(1) ring(0) position(11) region(lstyle(none)) size(small)) ///
+       title("Figure A2(b): Single-establishment and German-owned firms", size(medium)) ///
+       name(figA2b, replace)
+graph export "${figout}/figure_A2b.jpg", replace width(2000) height(1500)
+
+* ---- Figure A3: Extensive margin of hiring -----------------------------------
+* Bar chart (matches the chart type used for Figure A3 in the paper), with
+* the 95% bootstrap CI overlaid as error-bar caps on each bar.
+use "${data}/plot_data_main.dta", clear
+twoway (bar hire_immigrant decile_wbill, color(navy%70) barwidth(0.8)) ///
+       (rcap ci_lo_hire ci_hi_hire decile_wbill, lcolor(black)), ///
+       xscale(range(0.5 10.5)) ///
+       ytitle("Share of establishments hiring immigrants", size(small)) `xopts' `gropts' ///
+       legend(off) title("Figure A3: Extensive margin of hiring", size(medium)) name(figA3, replace)
+graph export "${figout}/figure_A3.jpg", replace width(2000) height(1500)
+
+* ---- Figure A4(a): By tenure -------------------------------------------------
+use "${data}/plot_data_main.dta", clear
+twoway (rcap ci_lo_ep10 ci_hi_ep10 decile_wbill, lcolor(navy%40)) ///
+       (rcap ci_lo_el10 ci_hi_el10 decile_wbill, lcolor(maroon%40)) ///
+       (connected mig_share_ep10 decile_wbill, lcolor(navy)   mcolor(navy)   msymbol(O)) ///
+       (connected mig_share_el10 decile_wbill, lcolor(maroon) mcolor(maroon) msymbol(Dh)), ///
+       ytitle("Immigrant wage-bill share", size(small)) `xopts' `gropts' ///
+       legend(order(3 ">10 years experience" 4 "<=10 years experience") ///
+              cols(1) ring(0) position(11) region(lstyle(none)) size(small)) ///
+       title("Figure A4(a): By tenure", size(medium)) name(figA4a, replace)
+graph export "${figout}/figure_A4a.jpg", replace width(2000) height(1500)
+
+* ---- Figure A4(b): By age ----------------------------------------------------
+use "${data}/plot_data_main.dta", clear
+twoway (rcap ci_lo_young ci_hi_young decile_wbill, lcolor(navy%40)) ///
+       (rcap ci_lo_old ci_hi_old decile_wbill, lcolor(maroon%40)) ///
+       (connected mig_share_young decile_wbill, lcolor(navy)   mcolor(navy)   msymbol(O)) ///
+       (connected mig_share_old   decile_wbill, lcolor(maroon) mcolor(maroon) msymbol(Dh)), ///
+       ytitle("Immigrant wage-bill share", size(small)) `xopts' `gropts' ///
+       legend(order(3 "Age < 40" 4 "Age >= 40") cols(1) ring(0) position(11) ///
+              region(lstyle(none)) size(small)) ///
+       title("Figure A4(b): By age", size(medium)) name(figA4b, replace)
+graph export "${figout}/figure_A4b.jpg", replace width(2000) height(1500)
+
+* ---- Figure A6(a): Number of origin regions by size bin ---------------------
+use "${data}/plot_data_main.dta", clear
+twoway (rcap ci_lo_ncountries ci_hi_ncountries decile_wbill, lcolor(navy%40)) ///
+       (connected number_of_countries decile_wbill, lcolor(navy) mcolor(navy) msymbol(O)), ///
+       ytitle("Mean number of origin regions", size(small)) `xopts' `gropts' ///
+       legend(off) title("Figure A6(a): Number of origin regions by size bin", size(medium)) ///
+       name(figA6a, replace)
+graph export "${figout}/figure_A6a.jpg", replace width(2000) height(1500)
+
+* ---- Figure A6(b): Number of origin regions by immigrant-share group --------
+* Re-derive mig_share_pct from medians_a6b.dta exactly as done for Table 14
+* above (that in-memory copy is no longer available here, since the Figure
+* 1 - A6(a) sections above have since loaded other datasets). No bootstrap CI
+* is computed for this figure in the analysis above, so none is plotted.
+use "${data}/medians_a6b.dta", clear
+drop if mig_share_group == .
+gen mig_share_pct = (mig_share_group - 0.5)   // midpoint in percent
+twoway (connected med_countries  mig_share_pct, lcolor(navy)   mcolor(navy)   msymbol(O)) ///
+       (connected mean_countries mig_share_pct, lcolor(maroon) mcolor(maroon) msymbol(Dh)), ///
+       ytitle("Number of origin regions", size(small)) ///
+       xtitle("Immigrant wage-bill share (%, bin midpoint)", size(small)) `gropts' ///
+       legend(order(1 "Median" 2 "Mean") cols(1) ring(0) position(11) ///
+              region(lstyle(none)) size(small)) ///
+       title("Figure A6(b): Number of origin regions by immigrant-share group", size(medium)) ///
+       name(figA6b, replace)
+graph export "${figout}/figure_A6b.jpg", replace width(2000) height(1500)
+
+
 log close

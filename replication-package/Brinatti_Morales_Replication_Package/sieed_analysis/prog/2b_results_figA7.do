@@ -123,8 +123,20 @@ gen decile_wbill = size_bin
 table decile_wbill if jahr>2002 & jahr<2011 , stat(p50 wimm_sh) stat(count wimm_sh) 
 
 *2015-2018
-table decile_wbill if jahr>2014 & jahr<2019 , stat(p50 wimm_sh) stat(count wimm_sh) 
+table decile_wbill if jahr>2014 & jahr<2019 , stat(p50 wimm_sh) stat(count wimm_sh)
 
+
+* ---- Added for JPE reproducibility deposit: stash the point estimates above
+* (median wimm_sh by decile_wbill, pre/post period) to a tempfile, since the
+* `table` commands above only print them and do not save a dataset. Used by
+* the Figure A7 plotting section added at the end of this do-file.
+tempfile figA7_point
+preserve
+    gen wimm_sh_pre_pt  = wimm_sh if jahr>2002 & jahr<2011
+    gen wimm_sh_post_pt = wimm_sh if jahr>2014 & jahr<2019
+    collapse (median) wimm_sh_pre_pt wimm_sh_post_pt, by(decile_wbill)
+    save `figA7_point'
+restore
 
 
 *-------------------------------------------------------------------------------
@@ -202,6 +214,72 @@ table decile_wbill, stat(sd wimm_sh_0211) stat(n wimm_sh_0211)
 *2015-2018
 table decile_wbill, stat(sd wimm_sh_1419) stat(n wimm_sh_1419)
 
+
+/*==============================================================================
+  FIGURE (added for JPE reproducibility deposit — not part of the original
+  submission). This section does not modify any of the analysis above; it only
+  combines the point estimates (stashed above, right after the original
+  point-estimate `table` calls) with the bootstrap SDs computed just above to
+  plot Figure A7, since in the original submission this table was turned into
+  a figure in Excel.
+
+  NOTE ON EXACT APPEARANCE: the published Figure A7 was built by hand in Excel
+  from the point estimates and standard errors printed by the `table` calls
+  above (styling, colors, markers chosen by the authors). The Stata graph
+  below plots the same underlying numbers but will not look pixel-identical
+  to the paper's version (font, colors, marker style, axis formatting, etc.
+  all differ) -- only the data displayed is the same.
+
+  Output: sieed_analysis/output/figure_A7.jpg
+==============================================================================*/
+
+preserve
+    collapse (sd) sd_pre = wimm_sh_0211 sd_post = wimm_sh_1419, by(decile_wbill)
+    merge 1:1 decile_wbill using `figA7_point', nogenerate
+
+    gen ci_lo_pre  = wimm_sh_pre_pt  - 1.96*sd_pre
+    gen ci_hi_pre  = wimm_sh_pre_pt  + 1.96*sd_pre
+    gen ci_lo_post = wimm_sh_post_pt - 1.96*sd_post
+    gen ci_hi_post = wimm_sh_post_pt + 1.96*sd_post
+
+    label define bin_lbl 1 "0-10" 2 "11-20" 3 "21-30" 4 "31-50" 5 "51-70" ///
+        6 "71-100" 7 "101-150" 8 "151-200" 9 "201-500" 10 "+500"
+    label values decile_wbill bin_lbl
+
+    * Compute the y-axis range dynamically from the actual CI bounds (with a
+    * 5% padding margin), rather than relying on Stata's default auto-range,
+    * so that no point estimate or CI whisker is ever clipped at the plot edge.
+    quietly summarize ci_lo_pre
+    local ymin = r(min)
+    quietly summarize ci_lo_post
+    local ymin = min(`ymin', r(min))
+    quietly summarize ci_hi_pre
+    local ymax = r(max)
+    quietly summarize ci_hi_post
+    local ymax = max(`ymax', r(max))
+    local ypad = 0.05*(`ymax' - `ymin')
+    local ylo  = `ymin' - `ypad'
+    local yhi  = `ymax' + `ypad'
+
+    set scheme s1color
+    global figout = subinstr("${prog}", "/prog", "/output", 1)
+    cap mkdir "${figout}"
+
+    twoway (rcap ci_lo_pre ci_hi_pre decile_wbill, lcolor(navy%40)) ///
+           (rcap ci_lo_post ci_hi_post decile_wbill, lcolor(maroon%40)) ///
+           (connected wimm_sh_pre_pt  decile_wbill, lcolor(navy)   mcolor(navy)   msymbol(O)) ///
+           (connected wimm_sh_post_pt decile_wbill, lcolor(maroon) mcolor(maroon) msymbol(Dh)), ///
+           xlabel(1/10, valuelabel angle(45) labsize(vsmall)) xscale(range(0.5 10.5)) ///
+           xtitle("Establishment size bin (employment)", size(small)) ///
+           yscale(range(`ylo' `yhi')) ///
+           ytitle("Immigrant wage-bill share (median)", size(small)) ///
+           legend(order(3 "2003-2010 (pre)" 4 "2015-2018 (post)") ///
+                  cols(2) ring(1) position(6) region(lstyle(none)) size(small)) ///
+           graphregion(color(white)) plotregion(color(white)) ysize(4.5) xsize(6.5) ///
+           title("Figure A7: Immigrant share before/after EU enlargement", size(medium)) ///
+           name(figA7, replace)
+    graph export "${figout}/figure_A7.jpg", replace width(2000) height(1500)
+restore
 
 
 log close

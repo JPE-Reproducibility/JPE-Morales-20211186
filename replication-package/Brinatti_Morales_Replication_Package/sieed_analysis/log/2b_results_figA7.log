@@ -1,0 +1,1024 @@
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/sieed_analysis/log/2b_results_figA7.log
+  log type:  text
+ opened on:   9 Sep 2026, 16:01:02
+
+. 
+. 
+. 
+. *Data
+. 
+. use "${data}/firm_level_sieed_A7.dta", clear
+
+. 
+. 
+. 
+. * Merge in the local labor market crosswalk (used to verify geographic coverage;
+. * district identifiers are present from the BHP merge in 1c).
+. merge m:1 ao_kreis using "${data}/local_labor_market.dta" , generate(merge2)  
+(label ao_kreis_en already defined)
+(label ao_kreis_de already defined)
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                           918
+        from master                       911  (merge2==1)
+        from using                          7  (merge2==2)
+
+    Matched                            12,913  (merge2==3)
+    -----------------------------------------
+
+. drop if merge2==2
+(7 observations deleted)
+
+. drop merge2
+
+. keep if jahr>2002
+(523 observations deleted)
+
+. 
+. 
+. rename local_labor local_labor11
+
+. 
+. * Construct industry x year and local labor market x year fixed effect groups
+. * (available for robustness; not used directly in the Figure A7 tabulations).
+. egen industry_time              = group(w93_3_gen jahr)
+(919 missing values generated)
+
+. egen local_labor_time   = group(local_labor11 jahr)
+(984 missing values generated)
+
+. egen industry_local_time=group(w93_3_gen ao_kreis jahr)
+(920 missing values generated)
+
+. 
+. 
+. *-------------------------------------------------------------------------------
+. * Immigrant share measures
+. *   wimm_sh: wage-bill-based immigrant share (main outcome, used in Figure A7
+. *            and Figure 1 of the paper)
+. *   imm_sh:  employment-count-based immigrant share (available for robustness)
+. *-------------------------------------------------------------------------------
+. 
+. * immigrant shares
+. 
+. gen wimm_sh             = wbill_imm/(wbill_tot)
+(8 missing values generated)
+
+. gen imm_sh              = emp_imm/(emp_tot)
+
+. 
+. *-------------------------------------------------------------------------------
+. * Size bins
+. *
+. * Establishments are assigned to one of 10 size bins based on their June 30
+. * employment count (emp_tot), using the same bin boundaries as Figure 1 of the
+. * paper (0-10, 11-20, 21-30, 31-50, 51-70, 71-100, 101-150, 151-200, 201-500,
+. * 500+). Because Figure A7 uses all years in the SIEED panel (not just 2010),
+. * emp_tot refers to employment in each respective year.
+. *-------------------------------------------------------------------------------
+. 
+. * Size bins 
+. 
+. gen size_bin=.
+(13,301 missing values generated)
+
+. replace size_bin=1 if emp_tot<=10
+(11,481 real changes made)
+
+. replace size_bin=2 if emp_tot>=11 & emp_tot<=20
+(469 real changes made)
+
+. replace size_bin=3 if emp_tot>=21 & emp_tot<=30
+(65 real changes made)
+
+. replace size_bin=4 if emp_tot>=31 & emp_tot<=50
+(37 real changes made)
+
+. replace size_bin=5 if emp_tot>=51 & emp_tot<=70
+(17 real changes made)
+
+. replace size_bin=6 if emp_tot>=71 & emp_tot<=100
+(8 real changes made)
+
+. replace size_bin=7 if emp_tot>=101 & emp_tot<=150
+(2 real changes made)
+
+. replace size_bin=8 if emp_tot>=151 & emp_tot<=200
+(0 real changes made)
+
+. replace size_bin=9 if emp_tot>=201 & emp_tot<=500
+(1,222 real changes made)
+
+. replace size_bin=10 if emp_tot>=501 & emp_tot!=.
+(0 real changes made)
+
+. 
+. gen decile_wbill = size_bin
+
+. 
+. 
+. 
+. 
+. *-------------------------------------------------------------------------------
+. * Figure A7: Immigrant share for before and after the EU enlargement
+. *
+. * Point estimates: median immigrant wage-bill share within each size bin,
+. * computed separately for the pre-policy (2003-2010) and post-policy
+. * (2015-2018) periods. The 2011-2014 transition period is excluded to
+. * allow sufficient time for the policy effect to materialize.
+. * The table also reports the number of establishment-year observations in
+. * each bin, which is used to assess sample size.
+. *-------------------------------------------------------------------------------
+. 
+. 
+. * Figure A7: Immigrant share for before and after the EU enlargement
+. 
+. 
+. *2003-2010
+. table decile_wbill if jahr>2002 & jahr<2011 , stat(p50 wimm_sh) stat(count wimm_sh) 
+
+-------------------------------------------------------------
+             |  50th percentile   Number of nonmissing values
+-------------+-----------------------------------------------
+decile_wbill |                                               
+  1          |         .3349636                         3,818
+  2          |         .1905039                            73
+  3          |         .1968856                            12
+  4          |         .1704591                             5
+  5          |         .0394118                             3
+  9          |         .1571322                           470
+  Total      |          .205448                         4,381
+-------------------------------------------------------------
+
+. 
+. *2015-2018
+. table decile_wbill if jahr>2014 & jahr<2019 , stat(p50 wimm_sh) stat(count wimm_sh)
+
+-------------------------------------------------------------
+             |  50th percentile   Number of nonmissing values
+-------------+-----------------------------------------------
+decile_wbill |                                               
+  1          |         .3918582                         4,676
+  2          |         .2582488                           240
+  3          |         .1838917                            37
+  4          |         .1301281                            18
+  5          |         .1637282                            11
+  6          |         .2154386                             7
+  7          |         .1220229                             2
+  9          |         .1602271                           376
+  Total      |         .3834728                         5,367
+-------------------------------------------------------------
+
+. 
+. 
+. * ---- Added for JPE reproducibility deposit: stash the point estimates above
+. * (median wimm_sh by decile_wbill, pre/post period) to a tempfile, since the
+. * `table` commands above only print them and do not save a dataset. Used by
+. * the Figure A7 plotting section added at the end of this do-file.
+. tempfile figA7_point
+
+. preserve
+
+.     gen wimm_sh_pre_pt  = wimm_sh if jahr>2002 & jahr<2011
+(8,920 missing values generated)
+
+.     gen wimm_sh_post_pt = wimm_sh if jahr>2014 & jahr<2019
+(7,934 missing values generated)
+
+.     collapse (median) wimm_sh_pre_pt wimm_sh_post_pt, by(decile_wbill)
+
+.     save `figA7_point'
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000001 saved as .dta format
+
+. restore
+
+. 
+. 
+. *-------------------------------------------------------------------------------
+. * Bootstrap standard errors for Figure A7
+. *
+. * 200 bootstrap repetitions with bsample (sampling with replacement at the
+. * establishment-year level). In each iteration we collapse to the median
+. * immigrant share by size bin x period, then append all iterations and compute
+. * the standard deviation across bootstrap samples -- this standard deviation
+. * is the bootstrap standard error reported in Figure A7.
+. *
+. * The two period-specific variables (wimm_sh_0211, wimm_sh_1419) are defined
+. * first so that a single bsample draw preserves both periods simultaneously,
+. * ensuring that the same set of establishments is used for both the pre- and
+. * post-period medians within each bootstrap iteration.
+. *-------------------------------------------------------------------------------
+. 
+. ******Standard errors for figure A7********
+. 
+. 
+. gen wimm_sh_0211=wimm_sh if  jahr>2002 & jahr<2011
+(8,920 missing values generated)
+
+. gen wimm_sh_1419=wimm_sh if  jahr>2014 & jahr<2019
+(7,934 missing values generated)
+
+. 
+. 
+. keep decile_wbill wimm_sh_0211 wimm_sh_1419 
+
+. 
+. 
+. local ntot=200
+
+. 
+. forvalues x = 1/`ntot' {
+  2. 
+. preserve
+  3. 
+. display `x'
+  4.         
+. set seed `x'
+  5.         
+. bsample         
+  6.         
+. collapse (median) wimm_sh_0211 wimm_sh_1419, by(decile_wbill) 
+  7. 
+.         
+. gen nsample=`x'
+  8.                 
+. tempfile boot`x'
+  9. save `boot`x'', replace
+ 10. 
+.                 
+. restore
+ 11. 
+. }
+1
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000004 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000004 saved as .dta format
+2
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000006 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000006 saved as .dta format
+3
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000008 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000008 saved as .dta format
+4
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00000a not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00000a saved as .dta format
+5
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00000c not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00000c saved as .dta format
+6
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00000e not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00000e saved as .dta format
+7
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00000g not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00000g saved as .dta format
+8
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00000i not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00000i saved as .dta format
+9
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00000k not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00000k saved as .dta format
+10
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00000m not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00000m saved as .dta format
+11
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00000o not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00000o saved as .dta format
+12
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00000q not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00000q saved as .dta format
+13
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00000s not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00000s saved as .dta format
+14
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00000u not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00000u saved as .dta format
+15
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00000w not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00000w saved as .dta format
+16
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000010 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000010 saved as .dta format
+17
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000012 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000012 saved as .dta format
+18
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000014 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000014 saved as .dta format
+19
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000016 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000016 saved as .dta format
+20
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000018 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000018 saved as .dta format
+21
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00001a not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00001a saved as .dta format
+22
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00001c not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00001c saved as .dta format
+23
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00001e not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00001e saved as .dta format
+24
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00001g not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00001g saved as .dta format
+25
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00001i not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00001i saved as .dta format
+26
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00001k not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00001k saved as .dta format
+27
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00001m not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00001m saved as .dta format
+28
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00001o not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00001o saved as .dta format
+29
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00001q not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00001q saved as .dta format
+30
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00001s not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00001s saved as .dta format
+31
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00001u not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00001u saved as .dta format
+32
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00001w not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00001w saved as .dta format
+33
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000020 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000020 saved as .dta format
+34
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000022 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000022 saved as .dta format
+35
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000024 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000024 saved as .dta format
+36
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000026 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000026 saved as .dta format
+37
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000028 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000028 saved as .dta format
+38
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00002a not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00002a saved as .dta format
+39
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00002c not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00002c saved as .dta format
+40
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00002e not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00002e saved as .dta format
+41
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00002g not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00002g saved as .dta format
+42
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00002i not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00002i saved as .dta format
+43
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00002k not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00002k saved as .dta format
+44
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00002m not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00002m saved as .dta format
+45
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00002o not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00002o saved as .dta format
+46
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00002q not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00002q saved as .dta format
+47
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00002s not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00002s saved as .dta format
+48
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00002u not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00002u saved as .dta format
+49
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00002w not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00002w saved as .dta format
+50
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000030 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000030 saved as .dta format
+51
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000032 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000032 saved as .dta format
+52
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000034 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000034 saved as .dta format
+53
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000036 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000036 saved as .dta format
+54
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000038 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000038 saved as .dta format
+55
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00003a not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00003a saved as .dta format
+56
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00003c not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00003c saved as .dta format
+57
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00003e not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00003e saved as .dta format
+58
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00003g not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00003g saved as .dta format
+59
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00003i not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00003i saved as .dta format
+60
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00003k not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00003k saved as .dta format
+61
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00003m not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00003m saved as .dta format
+62
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00003o not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00003o saved as .dta format
+63
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00003q not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00003q saved as .dta format
+64
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00003s not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00003s saved as .dta format
+65
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00003u not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00003u saved as .dta format
+66
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00003w not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00003w saved as .dta format
+67
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000040 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000040 saved as .dta format
+68
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000042 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000042 saved as .dta format
+69
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000044 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000044 saved as .dta format
+70
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000046 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000046 saved as .dta format
+71
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000048 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000048 saved as .dta format
+72
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00004a not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00004a saved as .dta format
+73
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00004c not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00004c saved as .dta format
+74
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00004e not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00004e saved as .dta format
+75
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00004g not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00004g saved as .dta format
+76
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00004i not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00004i saved as .dta format
+77
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00004k not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00004k saved as .dta format
+78
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00004m not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00004m saved as .dta format
+79
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00004o not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00004o saved as .dta format
+80
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00004q not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00004q saved as .dta format
+81
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00004s not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00004s saved as .dta format
+82
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00004u not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00004u saved as .dta format
+83
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00004w not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00004w saved as .dta format
+84
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000050 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000050 saved as .dta format
+85
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000052 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000052 saved as .dta format
+86
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000054 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000054 saved as .dta format
+87
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000056 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000056 saved as .dta format
+88
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000058 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000058 saved as .dta format
+89
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00005a not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00005a saved as .dta format
+90
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00005c not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00005c saved as .dta format
+91
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00005e not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00005e saved as .dta format
+92
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00005g not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00005g saved as .dta format
+93
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00005i not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00005i saved as .dta format
+94
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00005k not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00005k saved as .dta format
+95
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00005m not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00005m saved as .dta format
+96
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00005o not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00005o saved as .dta format
+97
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00005q not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00005q saved as .dta format
+98
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00005s not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00005s saved as .dta format
+99
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00005u not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00005u saved as .dta format
+100
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00005w not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00005w saved as .dta format
+101
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000060 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000060 saved as .dta format
+102
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000062 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000062 saved as .dta format
+103
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000064 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000064 saved as .dta format
+104
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000066 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000066 saved as .dta format
+105
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000068 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000068 saved as .dta format
+106
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00006a not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00006a saved as .dta format
+107
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00006c not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00006c saved as .dta format
+108
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00006e not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00006e saved as .dta format
+109
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00006g not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00006g saved as .dta format
+110
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00006i not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00006i saved as .dta format
+111
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00006k not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00006k saved as .dta format
+112
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00006m not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00006m saved as .dta format
+113
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00006o not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00006o saved as .dta format
+114
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00006q not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00006q saved as .dta format
+115
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00006s not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00006s saved as .dta format
+116
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00006u not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00006u saved as .dta format
+117
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00006w not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00006w saved as .dta format
+118
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000070 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000070 saved as .dta format
+119
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000072 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000072 saved as .dta format
+120
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000074 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000074 saved as .dta format
+121
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000076 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000076 saved as .dta format
+122
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000078 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000078 saved as .dta format
+123
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00007a not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00007a saved as .dta format
+124
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00007c not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00007c saved as .dta format
+125
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00007e not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00007e saved as .dta format
+126
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00007g not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00007g saved as .dta format
+127
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00007i not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00007i saved as .dta format
+128
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00007k not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00007k saved as .dta format
+129
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00007m not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00007m saved as .dta format
+130
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00007o not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00007o saved as .dta format
+131
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00007q not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00007q saved as .dta format
+132
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00007s not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00007s saved as .dta format
+133
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00007u not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00007u saved as .dta format
+134
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00007w not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00007w saved as .dta format
+135
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000080 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000080 saved as .dta format
+136
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000082 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000082 saved as .dta format
+137
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000084 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000084 saved as .dta format
+138
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000086 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000086 saved as .dta format
+139
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000088 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000088 saved as .dta format
+140
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00008a not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00008a saved as .dta format
+141
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00008c not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00008c saved as .dta format
+142
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00008e not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00008e saved as .dta format
+143
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00008g not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00008g saved as .dta format
+144
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00008i not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00008i saved as .dta format
+145
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00008k not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00008k saved as .dta format
+146
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00008m not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00008m saved as .dta format
+147
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00008o not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00008o saved as .dta format
+148
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00008q not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00008q saved as .dta format
+149
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00008s not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00008s saved as .dta format
+150
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00008u not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00008u saved as .dta format
+151
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00008w not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00008w saved as .dta format
+152
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000090 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000090 saved as .dta format
+153
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000092 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000092 saved as .dta format
+154
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000094 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000094 saved as .dta format
+155
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000096 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000096 saved as .dta format
+156
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000098 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.000098 saved as .dta format
+157
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00009a not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00009a saved as .dta format
+158
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00009c not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00009c saved as .dta format
+159
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00009e not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00009e saved as .dta format
+160
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00009g not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00009g saved as .dta format
+161
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00009i not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00009i saved as .dta format
+162
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00009k not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00009k saved as .dta format
+163
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00009m not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00009m saved as .dta format
+164
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00009o not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00009o saved as .dta format
+165
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00009q not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00009q saved as .dta format
+166
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00009s not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00009s saved as .dta format
+167
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00009u not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00009u saved as .dta format
+168
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00009w not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.00009w saved as .dta format
+169
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000a0 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000a0 saved as .dta format
+170
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000a2 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000a2 saved as .dta format
+171
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000a4 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000a4 saved as .dta format
+172
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000a6 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000a6 saved as .dta format
+173
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000a8 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000a8 saved as .dta format
+174
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000aa not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000aa saved as .dta format
+175
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000ac not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000ac saved as .dta format
+176
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000ae not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000ae saved as .dta format
+177
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000ag not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000ag saved as .dta format
+178
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000ai not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000ai saved as .dta format
+179
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000ak not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000ak saved as .dta format
+180
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000am not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000am saved as .dta format
+181
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000ao not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000ao saved as .dta format
+182
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000aq not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000aq saved as .dta format
+183
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000as not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000as saved as .dta format
+184
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000au not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000au saved as .dta format
+185
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000aw not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000aw saved as .dta format
+186
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000b0 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000b0 saved as .dta format
+187
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000b2 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000b2 saved as .dta format
+188
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000b4 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000b4 saved as .dta format
+189
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000b6 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000b6 saved as .dta format
+190
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000b8 not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000b8 saved as .dta format
+191
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000ba not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000ba saved as .dta format
+192
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000bc not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000bc saved as .dta format
+193
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000be not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000be saved as .dta format
+194
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000bg not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000bg saved as .dta format
+195
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000bi not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000bi saved as .dta format
+196
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000bk not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000bk saved as .dta format
+197
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000bm not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000bm saved as .dta format
+198
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000bo not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000bo saved as .dta format
+199
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000bq not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000bq saved as .dta format
+200
+(file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000bs not found)
+file /var/folders/yv/gy9l8r0n7q96t36797h3fbd00000gn/T//S_37981.0000bs saved as .dta format
+
+. 
+. use `boot1', clear
+
+. 
+. forvalues y=2/`ntot'{
+  2. 
+. append using `boot`y''
+  3. 
+. }
+
+. 
+. 
+. *-------------------------------------------------------------------------------
+. * Bootstrap standard deviations (= standard errors for Figure A7)
+. *
+. * The standard deviation of the bootstrap medians across the 200 iterations,
+. * reported by size bin and period, is the standard error used to construct
+. * the 95% confidence intervals in Figure A7.
+. *-------------------------------------------------------------------------------
+. 
+. * Table A7 Standard errors
+. 
+. *2003-2010
+. table decile_wbill, stat(sd wimm_sh_0211) stat(n wimm_sh_0211)
+
+----------------------------------------------------------------
+             |  Standard deviation   Number of nonmissing values
+-------------+--------------------------------------------------
+decile_wbill |                                                  
+  1          |            .0096197                           200
+  2          |            .0332178                           200
+  3          |            .0471288                           200
+  4          |            .0338244                           200
+  5          |            .0788176                           189
+  6          |                   .                             0
+  7          |                   .                             0
+  9          |            .0019035                           200
+  Total      |            .0834108                         1,189
+----------------------------------------------------------------
+
+. 
+. *2015-2018
+. table decile_wbill, stat(sd wimm_sh_1419) stat(n wimm_sh_1419)
+
+----------------------------------------------------------------
+             |  Standard deviation   Number of nonmissing values
+-------------+--------------------------------------------------
+decile_wbill |                                                  
+  1          |            .0009803                           200
+  2          |            .0192102                           200
+  3          |            .0260564                           200
+  4          |            .0453459                           200
+  5          |            .0354342                           200
+  6          |            .0290217                           200
+  7          |            .0647974                           162
+  9          |            .0011601                           200
+  Total      |            .0879806                         1,562
+----------------------------------------------------------------
+
+. 
+. 
+. /*==============================================================================
+>   FIGURE (added for JPE reproducibility deposit — not part of the original
+>   submission). This section does not modify any of the analysis above; it only
+>   combines the point estimates (stashed above, right after the original
+>   point-estimate `table` calls) with the bootstrap SDs computed just above to
+>   plot Figure A7, since in the original submission this table was turned into
+>   a figure in Excel.
+> 
+>   NOTE ON EXACT APPEARANCE: the published Figure A7 was built by hand in Excel
+>   from the point estimates and standard errors printed by the `table` calls
+>   above (styling, colors, markers chosen by the authors). The Stata graph
+>   below plots the same underlying numbers but will not look pixel-identical
+>   to the paper's version (font, colors, marker style, axis formatting, etc.
+>   all differ) -- only the data displayed is the same.
+> 
+>   Output: sieed_analysis/output/figure_A7.jpg
+> ==============================================================================*/
+. 
+. preserve
+
+.     collapse (sd) sd_pre = wimm_sh_0211 sd_post = wimm_sh_1419, by(decile_wbill)
+
+.     merge 1:1 decile_wbill using `figA7_point', nogenerate
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                                 8  
+    -----------------------------------------
+
+. 
+.     gen ci_lo_pre  = wimm_sh_pre_pt  - 1.96*sd_pre
+(2 missing values generated)
+
+.     gen ci_hi_pre  = wimm_sh_pre_pt  + 1.96*sd_pre
+(2 missing values generated)
+
+.     gen ci_lo_post = wimm_sh_post_pt - 1.96*sd_post
+
+.     gen ci_hi_post = wimm_sh_post_pt + 1.96*sd_post
+
+. 
+.     label define bin_lbl 1 "0-10" 2 "11-20" 3 "21-30" 4 "31-50" 5 "51-70" ///
+>         6 "71-100" 7 "101-150" 8 "151-200" 9 "201-500" 10 "+500"
+
+.     label values decile_wbill bin_lbl
+
+. 
+.     * Compute the y-axis range dynamically from the actual CI bounds (with a
+.     * 5% padding margin), rather than relying on Stata's default auto-range,
+.     * so that no point estimate or CI whisker is ever clipped at the plot edge.
+.     quietly summarize ci_lo_pre
+
+.     local ymin = r(min)
+
+.     quietly summarize ci_lo_post
+
+.     local ymin = min(`ymin', r(min))
+
+.     quietly summarize ci_hi_pre
+
+.     local ymax = r(max)
+
+.     quietly summarize ci_hi_post
+
+.     local ymax = max(`ymax', r(max))
+
+.     local ypad = 0.05*(`ymax' - `ymin')
+
+.     local ylo  = `ymin' - `ypad'
+
+.     local yhi  = `ymax' + `ypad'
+
+. 
+.     set scheme s1color
+
+.     global figout = subinstr("${prog}", "/prog", "/output", 1)
+
+.     cap mkdir "${figout}"
+
+. 
+.     twoway (rcap ci_lo_pre ci_hi_pre decile_wbill, lcolor(navy%40)) ///
+>            (rcap ci_lo_post ci_hi_post decile_wbill, lcolor(maroon%40)) ///
+>            (connected wimm_sh_pre_pt  decile_wbill, lcolor(navy)   mcolor(navy)   msymbol(O)) ///
+>            (connected wimm_sh_post_pt decile_wbill, lcolor(maroon) mcolor(maroon) msymbol(Dh)), ///
+>            xlabel(1/10, valuelabel angle(45) labsize(vsmall)) xscale(range(0.5 10.5)) ///
+>            xtitle("Establishment size bin (employment)", size(small)) ///
+>            yscale(range(`ylo' `yhi')) ///
+>            ytitle("Immigrant wage-bill share (median)", size(small)) ///
+>            legend(order(3 "2003-2010 (pre)" 4 "2015-2018 (post)") ///
+>                   cols(2) ring(1) position(6) region(lstyle(none)) size(small)) ///
+>            graphregion(color(white)) plotregion(color(white)) ysize(4.5) xsize(6.5) ///
+>            title("Figure A7: Immigrant share before/after EU enlargement", size(medium)) ///
+>            name(figA7, replace)
+
+.     graph export "${figout}/figure_A7.jpg", replace width(2000) height(1500)
+file /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/sieed_analysis/output/figure_A7.jpg saved as JPG format
+
+. restore
+
+. 
+. 
+. log close
+      name:  <unnamed>
+       log:  /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/sieed_analysis/log/2b_results_figA7.log
+  log type:  text
+ closed on:   9 Sep 2026, 16:01:06
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

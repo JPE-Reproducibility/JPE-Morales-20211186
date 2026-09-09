@@ -1,0 +1,323 @@
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/sieed_analysis/log/2c_results_figA5.log
+  log type:  text
+ opened on:   9 Sep 2026, 16:01:06
+
+. 
+. 
+. 
+. use "${data}/firm_level_sieed.dta", clear
+
+. 
+. * Restrict to 2003-2010 to focus on the pre-enlargement period, consistent
+. * with Figure A5 in the paper (which uses the SIEED over this window).
+. keep if jahr<2011 
+(8,912 observations deleted)
+
+. keep if jahr>2002
+(523 observations deleted)
+
+. 
+. * Recycling the code 
+. 
+. * Rename key variables to shorter names for convenience.
+. rename emp_tot nemp_ft
+
+. rename emp_imm nemp_imm_ft
+
+. rename emp_new_hire_imm nhir_imm_ft 
+
+. rename emp_new_hire_nat nhir_nat_ft
+
+. rename wbill_new_hire_imm whir_imm_ft 
+
+. rename wbill_new_hire_nat whir_nat_ft
+
+. 
+. *-------------------------------------------------------------------------------
+. * Identify the first period in which each establishment hires immigrants
+. *
+. * event_year: the first calendar year in which the firm had positive new
+. *             immigrant hires AND zero immigrant employment in the previous
+. *             period (i.e., a genuine first hire, not a re-hire after an
+. *             established immigrant workforce).
+. * dist_event_year: periods elapsed since event_year (0 = first hire period,
+. *                  1 = one period later, etc.)
+. *-------------------------------------------------------------------------------
+. 
+. * Compute the event variable and the years since and to event
+. 
+. by betnr (jahr), sort: gen nemp_imm_ftlag  = nemp_imm_ft[_n-1]
+(1,670 missing values generated)
+
+. 
+. gen event_year_aux = jahr if nhir_imm_ft > 0 & nemp_imm_ftlag == 0
+(4,062 missing values generated)
+
+. 
+. bysort betnr: egen event_year = min(event_year_aux)
+(2,783 missing values generated)
+
+. gen dist_event_year = jahr - event_year 
+(2,783 missing values generated)
+
+. tab dist_event_year
+
+dist_event_ |
+       year |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         -7 |          9        0.56        0.56
+         -6 |         20        1.25        1.81
+         -5 |         35        2.18        3.99
+         -4 |         45        2.80        6.79
+         -3 |        146        9.09       15.88
+         -2 |        203       12.64       28.52
+         -1 |        258       16.06       44.58
+          0 |        327       20.36       64.94
+          1 |        220       13.70       78.64
+          2 |        150        9.34       87.98
+          3 |        110        6.85       94.83
+          4 |         79        4.92       99.75
+          5 |          3        0.19       99.94
+          6 |          1        0.06      100.00
+------------+-----------------------------------
+      Total |      1,606      100.00
+
+. drop event_year_aux
+
+. 
+. gen event=0 
+
+. replace event=1 if dist_event_year==0
+(327 real changes made)
+
+. 
+. bysort betnr: egen event_ever = max(event)
+
+. 
+. * We keep the periods after the firm hired immigrants 
+. 
+. keep if dist_event_year==0| dist_event_year>0
+(716 observations deleted)
+
+. 
+. *Generate immigrant shares in terms of hiring
+. 
+.         gen nhir_imm_nat                = nhir_imm_ft/nhir_nat_ft
+(1,930 missing values generated)
+
+.         gen nhir_imm_sh                 = nhir_imm_ft/(nhir_imm_ft + nhir_nat_ft)
+(465 missing values generated)
+
+.         
+. *-------------------------------------------------------------------------------
+. * Sample selection
+. *
+. * Three restrictions to obtain a clean sample of genuine first-time hirers:
+. *   1. Drop firms that already had immigrants at the start of the period
+. *      (Dnemp_imm_f1==1 means the firm had immigrants in the very first
+. *      period it appears in the data, so it is not a new hirer).
+. *   2. Drop firms that never hire an immigrant during 2003-2010 (event_ever==0).
+. *   3. Drop firms with fewer than 5 total immigrant new hires across all
+. *      periods (sample_hire5==0), to ensure the hiring dynamics are meaningful.
+. *   4. Drop observations where nhir_imm_sh is missing (new hires of all types
+. *      are zero in that period).
+. *-------------------------------------------------------------------------------
+. 
+. *Sample selection
+. 
+.         * Drop those that were hiring immigrants in the first period 
+.         
+.         bysort betnr jahr: gen  nemp_imm_f1_aux = 0 if  _n == 1
+
+.         replace nemp_imm_f1_aux = 1 if (nemp_imm_ft > 0 & _n == 1)
+(1 real change made)
+
+.         
+.         bysort betnr: egen Dnemp_imm_f1=mean(nemp_imm_f1_aux)
+
+.         drop if Dnemp_imm_f1==1
+(1 observation deleted)
+
+.         drop nemp_imm_f1_aux
+
+.         
+.         *Drop those who will never hire an immigrant in the period 
+.         
+.         drop if event_ever==0
+(2,782 observations deleted)
+
+. 
+. 
+.         *Sample with that hire at least 5 or 10 immigrants in the period (2002-2018)
+. 
+.         bysort betnr: egen nhir_imm_f=sum(nhir_imm_ft) 
+
+.         
+.         gen sample_hire10 = (nhir_imm_f>9)
+
+.         gen sample_hire5  = (nhir_imm_f>4)      
+
+.         
+. 
+.         *Drop the observations that did not where hiring imm + natives = 0
+. 
+.         drop if missing(nhir_imm_sh)
+(3 observations deleted)
+
+. 
+.         *Only then we define the panel sample 
+.         
+.         foreach x in "1" "2" "3" "4" {
+  2.                 gen eventF`x' = (dist_event_year==`x')
+  3.         }
+
+.         gen eventF5 = (dist_event_year>4)
+
+. 
+.         
+. replace dist_event_year = 5 if dist_event_year > 4
+(1 real change made)
+
+.  
+. 
+.  *-------------------------------------------------------------------------------
+.  * Figure A5: Hiring dynamics after starting to hire immigrants
+.  *
+.  * For each value of dist_event_year (0 through 5+), compute:
+.  *   - Median and mean number of immigrant new hires (nhir_imm_ft): panel (a)
+.  *   - Median and mean immigrant share among new hires (nhir_imm_sh): panel (b)
+.  * restricted to firms that hired at least 5 immigrants in total (sample_hire5).
+.  * Standard deviations and observation counts are also reported.
+.  *-------------------------------------------------------------------------------
+. 
+.  *-------------------------------------------------------------------------------
+.  * Baseline
+.  *-------------------------------------------------------------------------------
+. 
+.  *Figure A5: Hiring dynamics after starting to hire immigrants
+.  
+.  
+. *(a) Number of immigrant new hires
+.  table dist_event_year if sample_hire5==1, stat(p50 nhir_imm_ft) stat(mean nhir_imm_ft) stat(sd nhir_imm_ft) stat(count nhir_imm_ft)
+
+------------------------------------------------------------------------------------------------
+                |  50th percentile       Mean   Standard deviation   Number of nonmissing values
+----------------+-------------------------------------------------------------------------------
+dist_event_year |                                                                               
+  0             |                2   7.804878             13.56325                           164
+  1             |                2   7.562092             13.65112                           153
+  2             |                2   6.894366             12.73444                           142
+  3             |                2   7.028302             13.51927                           106
+  4             |                2   7.893333             14.32497                            75
+  5             |                2       2.75                  1.5                             4
+  Total         |                2   7.397516             13.41677                           644
+------------------------------------------------------------------------------------------------
+
+. 
+. *(b) Immigrant share among new hires
+. table dist_event_year if sample_hire5==1, stat(p50 nhir_imm_sh) stat(mean nhir_imm_sh) stat(sd nhir_imm_sh) stat(count nhir_imm_sh)
+
+------------------------------------------------------------------------------------------------
+                |  50th percentile       Mean   Standard deviation   Number of nonmissing values
+----------------+-------------------------------------------------------------------------------
+dist_event_year |                                                                               
+  0             |                1   .7971553             .3336714                           164
+  1             |                1   .8043637              .331729                           153
+  2             |                1   .8046191             .3299266                           142
+  3             |                1   .8388122             .3134742                           106
+  4             |                1   .7790481             .3416837                            75
+  5             |                1     .90625                .1875                             4
+  Total         |                1    .805939             .3287842                           644
+------------------------------------------------------------------------------------------------
+
+. 
+. 
+. /*==============================================================================
+>   FIGURES (added for JPE reproducibility deposit — not part of the original
+>   submission). This section does not modify any of the analysis above; it only
+>   recomputes the same statistics shown in the two `table` calls above (which
+>   only print, and do not save a dataset) and plots them, since Figure A5 in
+>   the original submission was turned into a figure in Excel from this table.
+> 
+>   NOTE ON EXACT APPEARANCE: the published Figure A5 was built by hand in
+>   Excel from this table (styling, colors, markers chosen by the authors).
+>   The Stata graphs below plot the same underlying numbers but will not look
+>   pixel-identical to the paper's version (font, colors, marker style, axis
+>   formatting, etc. all differ) -- only the data displayed is the same.
+> 
+>   Output: sieed_analysis/output/figure_A5a.jpg, figure_A5b.jpg
+> ==============================================================================*/
+. 
+. preserve
+
+.     collapse (p50)  med_ft  = nhir_imm_ft  (mean) mean_ft = nhir_imm_ft  ///
+>              (sd)   sd_ft   = nhir_imm_ft  (count) n_ft   = nhir_imm_ft  ///
+>              (p50)  med_sh  = nhir_imm_sh  (mean) mean_sh = nhir_imm_sh  ///
+>              (sd)   sd_sh   = nhir_imm_sh  (count) n_sh   = nhir_imm_sh  ///
+>              if sample_hire5==1, by(dist_event_year)
+
+. 
+.     gen se_ft    = sd_ft / sqrt(n_ft)
+
+.     gen ci_lo_ft = mean_ft - 1.96*se_ft
+
+.     gen ci_hi_ft = mean_ft + 1.96*se_ft
+
+.     gen se_sh    = sd_sh / sqrt(n_sh)
+
+.     gen ci_lo_sh = mean_sh - 1.96*se_sh
+
+.     gen ci_hi_sh = mean_sh + 1.96*se_sh
+
+. 
+.     label define distlbl 0 "0" 1 "1" 2 "2" 3 "3" 4 "4" 5 "5+"
+
+.     label values dist_event_year distlbl
+
+. 
+.     set scheme s1color
+
+.     global figout = subinstr("${prog}", "/prog", "/output", 1)
+
+.     cap mkdir "${figout}"
+
+. 
+.     twoway (rcap ci_lo_ft ci_hi_ft dist_event_year, lcolor(navy%40)) ///
+>            (connected mean_ft dist_event_year, lcolor(navy)   mcolor(navy)   msymbol(O)) ///
+>            (connected med_ft  dist_event_year, lcolor(maroon) mcolor(maroon) msymbol(Dh) lpattern(dash)), ///
+>            xlabel(0/5, valuelabel) xtitle("Periods since first immigrant hire", size(small)) ///
+>            ytitle("Number of immigrant new hires", size(small)) ///
+>            legend(order(2 "Mean" 3 "Median") cols(1) ring(0) position(11) region(lstyle(none)) size(small)) ///
+>            graphregion(color(white)) plotregion(color(white)) ysize(4.5) xsize(6.5) ///
+>            title("Figure A5(a): Number of immigrant new hires", size(medium)) ///
+>            name(figA5a, replace)
+
+.     graph export "${figout}/figure_A5a.jpg", replace width(2000) height(1500)
+file /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/sieed_analysis/output/figure_A5a.jpg saved as JPG format
+
+. 
+.     twoway (rcap ci_lo_sh ci_hi_sh dist_event_year, lcolor(navy%40)) ///
+>            (connected mean_sh dist_event_year, lcolor(navy)   mcolor(navy)   msymbol(O)) ///
+>            (connected med_sh  dist_event_year, lcolor(maroon) mcolor(maroon) msymbol(Dh) lpattern(dash)), ///
+>            xlabel(0/5, valuelabel) xtitle("Periods since first immigrant hire", size(small)) ///
+>            ytitle("Immigrant share among new hires", size(small)) ///
+>            legend(order(2 "Mean" 3 "Median") cols(1) ring(0) position(11) region(lstyle(none)) size(small)) ///
+>            graphregion(color(white)) plotregion(color(white)) ysize(4.5) xsize(6.5) ///
+>            title("Figure A5(b): Immigrant share among new hires", size(medium)) ///
+>            name(figA5b, replace)
+
+.     graph export "${figout}/figure_A5b.jpg", replace width(2000) height(1500)
+file /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/sieed_analysis/output/figure_A5b.jpg saved as JPG format
+
+. restore
+
+. 
+. 
+. log close
+      name:  <unnamed>
+       log:  /Users/mac/JPE-replications/JPE-Morales-20211186/replication-package/Brinatti_Morales_Replication_Package/sieed_analysis/log/2c_results_figA5.log
+  log type:  text
+ closed on:   9 Sep 2026, 16:01:08
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
